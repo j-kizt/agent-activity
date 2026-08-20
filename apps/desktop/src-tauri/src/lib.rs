@@ -4338,6 +4338,7 @@ fn claude_hook_status() -> Result<(String, bool), String> {
 fn focus_terminal(
     conversation_id: String,
     cwd: Option<String>,
+    terminal: Option<String>,
     herdr_socket_path: Option<String>,
     herdr_pane_id: Option<String>,
     herdr_source_pid: Option<u32>,
@@ -4368,8 +4369,12 @@ fn focus_terminal(
         }
     }
 
-    let fallback = focus_iterm_window(&conversation_id, cwd.as_deref())?;
-    if fallback.starts_with("Activated iTerm ·") && herdr_error.is_some() {
+    let fallback = if terminal.as_deref() == Some("ghostty") {
+        focus_ghostty_window(&conversation_id, cwd.as_deref())?
+    } else {
+        focus_iterm_window(&conversation_id, cwd.as_deref())?
+    };
+    if fallback.starts_with("Activated ") && herdr_error.is_some() {
         return Ok(format!("Herdr focus unavailable · {fallback}"));
     }
     Ok(fallback)
@@ -4752,6 +4757,108 @@ tell application "iTerm2"
               tell candidateSession to select
               activate
               return "matched:" & sessionName
+            end if
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end repeat
+  activate
+end tell
+return "activated"
+"#
+    )
+}
+
+fn activate_ghostty() -> Result<(), String> {
+    let output = Command::new("open")
+        .args(["-a", "Ghostty"])
+        .output()
+        .map_err(|error| format!("Failed to launch Ghostty: {error}"))?;
+    if output.status.success() {
+        return Ok(());
+    }
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    Err(if stderr.is_empty() {
+        "Failed to activate Ghostty".to_string()
+    } else {
+        format!("Failed to activate Ghostty: {stderr}")
+    })
+}
+
+fn focus_ghostty_window(conversation_id: &str, cwd: Option<&str>) -> Result<String, String> {
+    let hints = build_focus_hints(conversation_id, cwd);
+
+    if let Ok(message) = focus_ghostty_with_window_hints(&hints) {
+        return Ok(message);
+    }
+
+    activate_ghostty()?;
+    Ok("Activated Ghostty · exact terminal not found".to_string())
+}
+
+fn focus_ghostty_with_window_hints(hints: &[String]) -> Result<String, String> {
+    let script = build_focus_ghostty_script(hints);
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .output()
+        .map_err(|error| format!("Failed to run AppleScript: {error}"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(if stderr.is_empty() {
+            "AppleScript focus failed".to_string()
+        } else {
+            stderr
+        });
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if stdout.strip_prefix("matched:").is_some() {
+        Ok(format!(
+            "Focused Ghostty · {}",
+            stdout.trim_start_matches("matched:")
+        ))
+    } else {
+        Ok("Activated Ghostty · exact terminal not found".to_string())
+    }
+}
+
+fn build_focus_ghostty_script(hints: &[String]) -> String {
+    let hints_source = hints
+        .iter()
+        .filter(|hint| !hint.trim().is_empty())
+        .map(|hint| apple_script_string(hint))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let hints_source = if hints_source.is_empty() {
+        "{}".to_string()
+    } else {
+        format!("{{{hints_source}}}")
+    };
+
+    format!(
+        r#"set matchHints to {hints_source}
+tell application "Ghostty"
+  repeat with candidateWindow in windows
+    set windowTitle to name of candidateWindow as text
+    set windowId to id of candidateWindow as text
+    repeat with candidateTab in tabs of candidateWindow
+      set tabTitle to name of candidateTab as text
+      set tabId to id of candidateTab as text
+      repeat with candidateTerminal in terminals of candidateTab
+        set terminalTitle to name of candidateTerminal as text
+        set terminalId to id of candidateTerminal as text
+        set terminalCwd to working directory of candidateTerminal as text
+        repeat with matchHint in matchHints
+          set hintText to matchHint as text
+          if hintText is not "" then
+            if terminalCwd is hintText or terminalCwd contains hintText or terminalTitle contains hintText or tabTitle contains hintText or windowTitle contains hintText or terminalId is hintText or tabId is hintText or windowId is hintText then
+              select tab candidateTab
+              focus candidateTerminal
+              activate window candidateWindow
+              return "matched:" & terminalCwd & " · " & terminalTitle
             end if
           end if
         end repeat

@@ -208,6 +208,7 @@ export const GithubPanel = ({ monitor, canUseNativeControls }: IGithubPanelProps
         <select
           className="gh-account-select"
           value={monitor.activeAccount ?? ""}
+          disabled={monitor.switching}
           onChange={(event) => void monitor.switchTo(event.target.value)}
           aria-label="Active GitHub account"
         >
@@ -226,6 +227,9 @@ export const GithubPanel = ({ monitor, canUseNativeControls }: IGithubPanelProps
           <Plus size={12} strokeWidth={2.3} />
         </button>
       </div>
+      {monitor.switching ? (
+        <div className="gh-card-line muted"><RefreshCw className="gh-spin" size={12} strokeWidth={2.3} /> Switching account…</div>
+      ) : null}
       {showAddSteps ? <AddAccountSteps /> : null}
       {monitor.activeAccount ? (
         <span className="gh-account-note muted">Switching affects the gh CLI system-wide.</span>

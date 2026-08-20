@@ -266,3 +266,11 @@
   font-size: 11px;
   padding: 0;
 }
+
+.gh-spin {
+  animation: gh-spin 0.9s linear infinite;
+}
+
+@keyframes gh-spin {
+  to { transform: rotate(360deg); }
+}

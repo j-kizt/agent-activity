@@ -22,6 +22,7 @@ export interface IGithubMonitor {
   statuses: Record<string, GithubRepoState>;
   accounts: IGhAccount[];
   activeAccount: string | null;
+  switching: boolean;
   addRepo: (repo: string) => void;
   removeRepo: (repo: string) => void;
   refresh: () => void;
@@ -40,6 +41,7 @@ export const useGithubMonitor = ({ active, canUseNativeControls }: IUseGithubMon
     return initial;
   });
   const [accounts, setAccounts] = useState<IGhAccount[]>([]);
+  const [switching, setSwitching] = useState(false);
   const trackedRef = useRef(trackedRepos);
   trackedRef.current = trackedRepos;
 
@@ -107,9 +109,14 @@ export const useGithubMonitor = ({ active, canUseNativeControls }: IUseGithubMon
   }, []);
 
   const switchTo = useCallback(async (user: string) => {
-    await switchAccount(user);
-    await refreshAccounts();
-    refresh();
+    setSwitching(true);
+    try {
+      await switchAccount(user);
+      await refreshAccounts();
+      refresh();
+    } finally {
+      setSwitching(false);
+    }
   }, [refresh, refreshAccounts]);
 
   useEffect(() => {
@@ -127,6 +134,7 @@ export const useGithubMonitor = ({ active, canUseNativeControls }: IUseGithubMon
     statuses,
     accounts,
     activeAccount,
+    switching,
     addRepo,
     removeRepo,
     refresh,

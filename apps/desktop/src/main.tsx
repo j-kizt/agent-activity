@@ -92,6 +92,15 @@ const writeKeepAwakeEnabled = (enabled: boolean) => {
   try { window.localStorage.setItem(KEEP_AWAKE_STORAGE_KEY, `${enabled}`); } catch { /* current runtime still owns state */ }
 };
 
+const TERMINAL_STORAGE_KEY = "agent-activity.terminal";
+export type TerminalChoice = "iterm" | "ghostty";
+const readTerminalChoice = (): TerminalChoice => {
+  try { return window.localStorage.getItem(TERMINAL_STORAGE_KEY) === "ghostty" ? "ghostty" : "iterm"; } catch { return "iterm"; }
+};
+const writeTerminalChoice = (choice: TerminalChoice) => {
+  try { window.localStorage.setItem(TERMINAL_STORAGE_KEY, choice); } catch { /* current runtime still owns state */ }
+};
+
 const getGroupRemovalId = (groupKey: string, group: IWorkspaceSessionGroup) => [groupKey, ...group.sessions.map((session) => session.conversationId).sort()].join("\n");
 
 const App = () => {
@@ -113,6 +122,7 @@ const App = () => {
   const [keepAwakeEnabled, setKeepAwakeEnabled] = useState(readKeepAwakeEnabled);
   const [keepAwakeActive, setKeepAwakeActive] = useState(false);
   const [keepAwakeError, setKeepAwakeError] = useState<string | null>(null);
+  const [terminal, setTerminal] = useState<TerminalChoice>(readTerminalChoice);
   const [expandedSessionGroupKeys, setExpandedSessionGroupKeys] = useState<Set<string>>(() => new Set());
   const [clearCompletedArmed, setClearCompletedArmed] = useState(false);
   const [pendingRemoveHistoryId, setPendingRemoveHistoryId] = useState<string | null>(null);
@@ -230,7 +240,7 @@ const App = () => {
     });
   }, [lastLiveEvent]);
   const headerLabel = setupOpen
-    ? "Setup"
+    ? "Settings"
     : selectedSession
       ? selectedSession.project
       : activeMainTab === "usage"
@@ -713,12 +723,13 @@ const App = () => {
       const message = await invoke<string>("focus_terminal", {
         conversationId: session.conversationId,
         cwd: "cwd" in session ? session.cwd : session.workspacePath,
+        terminal,
         herdrSocketPath: session.herdrTarget?.socketPath ?? null,
         herdrPaneId: session.herdrTarget?.paneId ?? null,
         herdrSourcePid: session.herdrTarget?.sourcePid ?? null,
         herdrSourceStartedAtMs: session.herdrTarget?.sourceStartedAtMs ?? null,
       });
-      const exactMatch = message.startsWith("Focused Herdr ·") || message.startsWith("Focused iTerm ·");
+      const exactMatch = message.startsWith("Focused Herdr ·") || message.startsWith("Focused iTerm ·") || message.startsWith("Focused Ghostty ·");
       setSessionAction({ ok: exactMatch, message });
     } catch (error) {
       setSessionAction({ ok: false, message: error instanceof Error ? error.message : "Terminal focus failed" });
@@ -783,7 +794,7 @@ const App = () => {
                       <GitBranch size={13} strokeWidth={2.3} />
                     </button>
                   </div>
-                  <button className="header-tab" type="button" aria-label="Setup" onClick={(event) => { event.stopPropagation(); openSetup(); }} data-tauri-drag-region="false" title="Setup">
+                  <button className="header-tab" type="button" aria-label="Settings" onClick={(event) => { event.stopPropagation(); openSetup(); }} data-tauri-drag-region="false" title="Settings">
                     <Settings size={13} strokeWidth={2.3} />
                   </button>
                 </div>
@@ -818,6 +829,8 @@ const App = () => {
                   onDisplayRefresh={loadDisplayState}
                   onInstallHook={() => void installHook()}
                   onKeepAwakeChange={updateKeepAwakeEnabled}
+                  terminal={terminal}
+                  onTerminalChange={(choice) => { setTerminal(choice); writeTerminalChoice(choice); }}
                   updater={updater}
                 />
               ) : selectedSession ? (
