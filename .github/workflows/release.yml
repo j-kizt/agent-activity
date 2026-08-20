@@ -20,10 +20,9 @@ jobs:
       - name: Build changelog
         id: changelog
         run: |
-          # Prefer hand-written notes from the annotated tag message body.
-          tag_body="$(git tag -l --format='%(contents:body)' "${GITHUB_REF_NAME}")"
-          if [ -n "$(printf '%s' "$tag_body" | tr -d '[:space:]')" ]; then
-            notes="$tag_body"
+          # Prefer hand-written notes committed at .github/release-notes.md.
+          if [ -s .github/release-notes.md ]; then
+            notes="$(cat .github/release-notes.md)"
           else
             prev="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
             range="${prev:+$prev..}${GITHUB_REF_NAME}"
