@@ -110,10 +110,18 @@ function createScopeTracker() {
   const cleanupIntervalMs = 1_000;
   let nextRecentCleanupAt = 0;
 
-  const lastScope = {
+  // Carry-forward scope is kept PER conversation (falling back to cwd) so that
+  // fields like `model` never bleed from one agent/source into another — e.g. an
+  // Antigravity turn must not stamp its model onto a Claude conversation.
+  const scopeMemory = new Map();
+  const blankScope = () => ({
     agentId: null, agentName: null, conversationId: null,
     cwd: null, model: null, permissionMode: null, runtime: null,
-  };
+  });
+  const scopeMemoryKey = (payload) =>
+    (typeof payload.conversationId === "string" && payload.conversationId.length > 0 && payload.conversationId) ||
+    (typeof payload.cwd === "string" && payload.cwd.length > 0 && payload.cwd) ||
+    "__global__";
 
   const cloneScope = (scope) => ({
     agentId: scope.agentId ?? null,
@@ -127,6 +135,7 @@ function createScopeTracker() {
 
   const removeActiveScope = (conversationId) => {
     if (!conversationId) return;
+    scopeMemory.delete(conversationId);
     const record = activeScopesByConversation.get(conversationId);
     activeScopesByConversation.delete(conversationId);
     if (!record?.scope.cwd) return;
@@ -188,11 +197,14 @@ function createScopeTracker() {
   const rememberScope = (payload) => {
     const now = Date.now();
     cleanupRecentState(now);
-    for (const key of Object.keys(lastScope)) {
-      if (payload[key] != null) lastScope[key] = payload[key];
+    const memKey = scopeMemoryKey(payload);
+    let mem = scopeMemory.get(memKey);
+    if (!mem) { mem = blankScope(); scopeMemory.set(memKey, mem); }
+    for (const key of Object.keys(mem)) {
+      if (payload[key] != null) mem[key] = payload[key];
     }
     if (["turn_start", "tool_start", "compact_start", "llm_start", "attention_requested"].includes(payload.type)) {
-      const scope = cloneScope(lastScope);
+      const scope = cloneScope(mem);
       if (payload.type === "turn_start" && scope.cwd) recentCompletionAtByCwd.delete(scope.cwd);
       if (scope.conversationId) {
         removeActiveScope(scope.conversationId);
