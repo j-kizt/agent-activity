@@ -8,13 +8,13 @@ test("overview uses dense trusted metadata and contextual Focus", async ({ page 
   await page.goto("/?demo=1&demoScenario=long-llm");
 
   const row = page.locator('.session-row[data-status="working"]');
-  await expect(row.locator(".session-project")).toHaveText("agent-halo");
+  await expect(row.locator(".session-project")).toHaveText("agent-activity");
   await expect(row.locator(".session-inline-status")).toHaveText("Working");
   await expect(row.locator(".session-activity")).toHaveText("gpt-5.6-sol");
   await expect(row.locator(".session-model")).toHaveText("gpt-5.6-sol");
   await expect(page.getByText("LC", { exact: true })).toHaveCount(0);
 
-  const focus = row.getByRole("button", { name: "Focus agent-halo session in Ghostty" });
+  const focus = row.getByRole("button", { name: "Focus agent-activity session in Ghostty" });
   await expect(focus).toHaveCSS("opacity", "0");
   await row.hover();
   await expect(focus).toHaveCSS("opacity", "1");
@@ -24,7 +24,7 @@ test("trusted Herdr runtime identity changes the focus target without claiming L
   await page.goto("/?demo=1&demoScenario=herdr");
 
   const row = page.locator('.session-row[data-status="working"]');
-  const focus = row.getByRole("button", { name: "Focus agent-halo session in Herdr" });
+  const focus = row.getByRole("button", { name: "Focus agent-activity session in Herdr" });
   await row.hover();
   await expect(focus).toBeVisible();
   await expect(focus).toHaveAttribute("title", "Focus exact Herdr pane");

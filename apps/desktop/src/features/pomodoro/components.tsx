@@ -169,7 +169,7 @@ export const PomodoroPanel = ({ onResetAll, pomodoro }: IPomodoroPanelProps) => 
       {showNotificationNote ? (
         <div className="pomodoro-notification" data-available={notificationAvailable} role="status" aria-live="polite">
           {notificationAvailable ? <Bell size={12} strokeWidth={2.2} /> : <BellOff size={12} strokeWidth={2.2} />}
-          <span>{pomodoro.notificationError ?? (pomodoro.notificationPermission === "notDetermined" ? "macOS will ask for notification access when you start" : "Completion stays visible in Agent Halo")}</span>
+          <span>{pomodoro.notificationError ?? (pomodoro.notificationPermission === "notDetermined" ? "macOS will ask for notification access when you start" : "Completion stays visible in Agent Activity")}</span>
         </div>
       ) : null}
     </div>

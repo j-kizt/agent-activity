@@ -20,7 +20,7 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@agent-halo/protocol':
+      '@agent-activity/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
       '@mediapipe/tasks-vision':

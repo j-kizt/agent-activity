@@ -48,8 +48,8 @@ if (!css || !js) throw new Error("desktop build is missing its primary CSS or Ja
 
 const dist = await walk(distRoot);
 const movementAssets = await walk(join(distRoot, "mediapipe"));
-const haloBotAssets = await walk(join(distRoot, "mascots", "agent-halo-roster", "body", "halo-bot"));
-const haloformAssets = await walk(join(distRoot, "mascots", "agent-halo-roster", "body", "haloform"));
+const haloBotAssets = await walk(join(distRoot, "mascots", "agent-activity-roster", "body", "halo-bot"));
+const haloformAssets = await walk(join(distRoot, "mascots", "agent-activity-roster", "body", "haloform"));
 const movementRuntimeBytes = assets
   .filter((asset) => asset.name.startsWith("vision_bundle-"))
   .reduce((total, asset) => total + asset.bytes, 0);

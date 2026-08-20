@@ -4,7 +4,7 @@ Production workflow for future identities and Halo Bot loadouts: [`pet-productio
 
 ## Phase 1 contract
 
-Agent Halo uses **Pet** as the product-facing companion concept. The selectable global roster contains only **Halo Bot** and **Haloform**. Halo Bot remains the fresh/default identity and exposes all 10,752 combinations from the pinned Pixabots catalog; Haloform is the approved provider-derived CRT companion built from a native96 master and explicit semantic masks. Both remain event/state projections rather than persistent desktop-pet simulations.
+Agent Activity uses **Pet** as the product-facing companion concept. The selectable global roster contains only **Halo Bot** and **Haloform**. Halo Bot remains the fresh/default identity and exposes all 10,752 combinations from the pinned Pixabots catalog; Haloform is the approved provider-derived CRT companion built from a native96 master and explicit semantic masks. Both remain event/state projections rather than persistent desktop-pet simulations.
 
 The Pet uses schema-v2 summons with three explicit purposes:
 
@@ -12,7 +12,7 @@ The Pet uses schema-v2 summons with three explicit purposes:
 - **Manual companion** — the Focus **Move** tab can show the companion at any time, including with a requested Squat or Overhead Reach. Its first pass reuses the five body motion families and mirrors the main-projected Pet state plus Signal V4; it persists until **Hide** and exposes **Focus**, **Choose move**, and **Hide**. It never prepares, starts, or otherwise changes Pomodoro. An automatic Focus completion does not replace a visible manual companion; the already scheduled macOS completion notification remains the fallback.
 - **Setup preview** — **Show Pet** creates a separate preview with dismiss-only controls. It cannot queue a product action, start a break, or start movement; close emits only the bounded ownership-clearing dismissal acknowledgement.
 
-The Pet appears in a separate transparent Tauri window without activating or focusing Agent Halo. A chooser is camera-free; only a specific **10 Squats** or **10 Overhead Reaches** click may request camera access. Setup owns automatic **Completion Pet after Focus** On/Off (default On), floating-only `1×`, `1.5×`, or `2×` size (default `2×`), and the **Offer movement after Focus** preference (default Off). Turning automatic Completion Pet Off hides only an active Focus-completion summon; manual companion access and a visible manual companion remain available. Successful Focus-completion display replaces its completion notification; disabled, unavailable, or manual-companion-preserving completion delivery leaves the silent macOS notification as fallback.
+The Pet appears in a separate transparent Tauri window without activating or focusing Agent Activity. A chooser is camera-free; only a specific **10 Squats** or **10 Overhead Reaches** click may request camera access. Setup owns automatic **Completion Pet after Focus** On/Off (default On), floating-only `1×`, `1.5×`, or `2×` size (default `2×`), and the **Offer movement after Focus** preference (default Off). Turning automatic Completion Pet Off hides only an active Focus-completion summon; manual companion access and a visible manual companion remain available. Successful Focus-completion display replaces its completion notification; disabled, unavailable, or manual-companion-preserving completion delivery leaves the silent macOS notification as fallback.
 
 ## Ownership
 
@@ -46,7 +46,7 @@ This keeps the OS-owned fallback available when the renderer/app is unavailable 
 - The radial-menu frame is `260 × 230` logical px. Three circular actions orbit the Pet on a transparent surface; the dashed orbit and circular controls make the deliberate interaction area visible even without a backing card.
 - The frame remains tight because transparent WebViews still have rectangular native hitboxes.
 - Default position: 20px from the selected display's visible bottom-right corner.
-- Dragging persists a normalized companion anchor with its source display id/fingerprint and clamps to the current visible frame. The current Setup display selection remains authoritative: if it differs from the saved Pet display, Agent Halo applies the normalized anchor on the selected display rather than showing Pet on the old screen.
+- Dragging persists a normalized companion anchor with its source display id/fingerprint and clamps to the current visible frame. The current Setup display selection remains authoritative: if it differs from the saved Pet display, Agent Activity applies the normalized anchor on the selected display rather than showing Pet on the old screen.
 - The radial action surface grows around the Pet's screen-space center when space permits, clamps fully into the visible frame, and returns to the saved collapsed position when it closes.
 - Pet is created and passively shown non-focusable; passive show never calls `set_focus` or application activation.
 - A deliberate user click may explicitly make the Pet focusable and focus its controls.
@@ -56,13 +56,13 @@ This keeps the OS-owned fallback available when the renderer/app is unavailable 
 
 ## Preference migration
 
-The preference key is `agent-halo.pet`. When absent, Agent Halo reads the legacy `agent-halo.mascot` value and writes the normalized Pet preference. Fresh installs default to Halo Bot. Only `halo-bot` and `haloform` are valid; retired, unknown, or malformed stored values normalize and rewrite to Halo Bot. Halo Bot's independent `agent-halo.halo-bot-loadout` key stores one four-character base36 ID in `eyes / heads / body / top` order and defaults to `3051`. Validation accepts the complete pinned catalog bounds (`16 × 8 × 7 × 12 = 10,752`) while malformed or out-of-range IDs normalize to the default. The loadout is global, user-selected, and never project-hashed or randomized. Product UI, accessibility copy, types, and settings use **Pet**.
+The preference key is `agent-activity.pet`. When absent, Agent Activity reads the legacy `agent-activity.mascot` value and writes the normalized Pet preference. Fresh installs default to Halo Bot. Only `halo-bot` and `haloform` are valid; retired, unknown, or malformed stored values normalize and rewrite to Halo Bot. Halo Bot's independent `agent-activity.halo-bot-loadout` key stores one four-character base36 ID in `eyes / heads / body / top` order and defaults to `3051`. Validation accepts the complete pinned catalog bounds (`16 × 8 × 7 × 12 = 10,752`) while malformed or out-of-range IDs normalize to the default. The loadout is global, user-selected, and never project-hashed or randomized. Product UI, accessibility copy, types, and settings use **Pet**.
 
-`agent-halo.pet-motion-map` stores one validated presentation mapping from each truthful Letta body state (`idle`, `working`, `attention`, `done`, `error`) to one of those five motion families. The default mapping is identity. Changing the mapping affects only the body strip and playback—for example, `working → idle` keeps semantic `data-state="working"`, Working copy/status precedence, Keep display awake behavior, and the independent Signal V4 activity icon unchanged.
+`agent-activity.pet-motion-map` stores one validated presentation mapping from each truthful Letta body state (`idle`, `working`, `attention`, `done`, `error`) to one of those five motion families. The default mapping is identity. Changing the mapping affects only the body strip and playback—for example, `working → idle` keeps semantic `data-state="working"`, Working copy/status precedence, Keep display awake behavior, and the independent Signal V4 activity icon unchanged.
 
 ## Global Halo Bot
 
-Halo Bot uses the MIT Pixabots layered character system pinned in the tracked asset provenance. One four-part rig composes face/eyes, head shell, body/outfit, and top accessory. The runtime ships the complete 43-part source catalog and composes the selected ID directly, so every one of the 10,752 combinations is available without pre-generating tens of thousands of state strips. Agent Halo preserves the authored palettes and applies deterministic presentation motion for `idle`, `working`, `attention`, `done`, and `error`; animated eye parts retain their own blink/sequence playback. Signal V4 stays a detached semantic layer and is never baked into the body.
+Halo Bot uses the MIT Pixabots layered character system pinned in the tracked asset provenance. One four-part rig composes face/eyes, head shell, body/outfit, and top accessory. The runtime ships the complete 43-part source catalog and composes the selected ID directly, so every one of the 10,752 combinations is available without pre-generating tens of thousands of state strips. Agent Activity preserves the authored palettes and applies deterministic presentation motion for `idle`, `working`, `attention`, `done`, and `error`; animated eye parts retain their own blink/sequence playback. Signal V4 stays a detached semantic layer and is never baked into the body.
 
 ## Global Haloform
 
@@ -72,7 +72,7 @@ Haloform is one global identity across ambient, session, group, detail, Setup, a
 - explicit body/head/face/top masks and reconstructed hidden surfaces make deterministic integer-offset motion possible without changing the neutral canonical image;
 - tracked strips deliver `30 × 30` ambient, `36 × 36` session/detail, and `96 × 96` Completion source cells for Idle, Working, Attention, Done, and Error;
 - Signal V4 remains an independent truthful semantic layer and is never baked into the body strips;
-- provenance, masks, QA, approval receipt, and deterministic builder live at `apps/desktop/assets/mascots/agent-halo-roster/source/haloform-motion-v1/`.
+- provenance, masks, QA, approval receipt, and deterministic builder live at `apps/desktop/assets/mascots/agent-activity-roster/source/haloform-motion-v1/`.
 
 ## Verification
 

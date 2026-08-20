@@ -1,4 +1,4 @@
-import type { AgentHaloEvent } from "@agent-halo/protocol";
+import type { AgentActivityEvent } from "@agent-activity/protocol";
 import {
   COMPACT_STALE_AFTER_MS,
   LLM_STALE_AFTER_MS,
@@ -10,14 +10,14 @@ import type { ActivityKind, IActivityDescriptor, ISessionSummary } from "./types
 
 export const shortenPath = (path: string | null | undefined): string => {
   if (!path) return "No workspace";
-  const home = window.__AGENT_HALO_HOME__ ?? "";
+  const home = window.__AGENT_ACTIVITY_HOME__ ?? "";
   const normalized = home ? path.replace(home, "~") : path;
   const segments = normalized.split("/").filter(Boolean);
   return segments.length <= 3 ? normalized : `…/${segments.slice(-3).join("/")}`;
 };
 
 export const projectName = (path: string | null | undefined): string =>
-  path?.split("/").filter(Boolean).at(-1) ?? "Agent Halo";
+  path?.split("/").filter(Boolean).at(-1) ?? "Agent Activity";
 
 export const formatTime = (timestamp: string | null): string =>
   timestamp
@@ -111,7 +111,7 @@ const usageTokens = (
       : usage.totalTokens
     : null;
 
-export const getEventActivity = (event: AgentHaloEvent): IActivityDescriptor => {
+export const getEventActivity = (event: AgentActivityEvent): IActivityDescriptor => {
   switch (event.type) {
     case "bridge_ready":
       return { kind: "bridge", label: "bridge", detail: `:${event.data.port}` };
@@ -193,7 +193,7 @@ export const getEventActivity = (event: AgentHaloEvent): IActivityDescriptor => 
   }
 };
 
-export const getEventDetail = (event: AgentHaloEvent) => {
+export const getEventDetail = (event: AgentActivityEvent) => {
   const activity = getEventActivity(event);
   return `${activity.label} · ${activity.detail}`;
 };
@@ -208,7 +208,7 @@ const terminalStop = (value: string | null | undefined) => {
   );
 };
 
-export const staleAfterMsForEvent = (event: AgentHaloEvent): number => {
+export const staleAfterMsForEvent = (event: AgentActivityEvent): number => {
   if (event.type === "llm_start") return LLM_STALE_AFTER_MS;
   if (event.type === "tool_start") return TOOL_STALE_AFTER_MS;
   if (event.type === "compact_start") return COMPACT_STALE_AFTER_MS;
@@ -220,7 +220,7 @@ export const staleAfterMsForEvent = (event: AgentHaloEvent): number => {
 };
 
 export const getEventSessionStatus = (
-  event: AgentHaloEvent,
+  event: AgentActivityEvent,
   now = new Date(),
 ): ISessionSummary["status"] => {
   const inactive = now.getTime() - Date.parse(event.timestamp) > staleAfterMsForEvent(event);

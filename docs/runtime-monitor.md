@@ -32,14 +32,14 @@ macOS TCP LISTEN sockets
 - Successful HTML roots may expose a whitespace-normalized, control-free title capped at 120 characters. Services uses that title as the primary label unless it is a generic `Directory listing`/`Index of` title; the process name stays visible beside the endpoint.
 - Expanding one listener row shows its full bounded process detail in normal document flow without a nested scroller. `Started by Letta · <project> · <pane>` appears only when the listener's bounded live parent ancestry contains a trusted Letta PID whose native process start matches within two seconds. The optional Herdr pane comes from that same matched session event. PID reuse, stale/missing ancestry, a process re-parented to `launchd`, or malformed labels produces no owner claim rather than a guess.
 - Every HTTP listener still exposes an independent inset 24px `Open in browser` action through the existing safe `http(s)` URL command, whether or not it is recognized as a web frontend.
-- **Stop process** is available only when the listener has a nonzero process-start identity, all real/effective/saved UIDs match the current non-root user, and the process is not PID 1, Agent Halo or its ancestors, the protected Agent Halo bridge on port 47621, or an exact Letta host identity. Confirmation states explicitly that stopping one process ends every listener it owns.
+- **Stop process** is available only when the listener has a nonzero process-start identity, all real/effective/saved UIDs match the current non-root user, and the process is not PID 1, Agent Activity or its ancestors, the protected Agent Activity bridge on port 47621, or an exact Letta host identity. Confirmation states explicitly that stopping one process ends every listener it owns.
 - Stop sends `SIGTERM` to the positive PID only after a recent native capability snapshot and a fresh exact PID/start/address/port/UID revalidation. If the process remains and the same listener is still open after the bounded grace period, native state records a short-lived one-shot Force eligibility; only then may the UI offer a second confirmed **Force kill**, which consumes that proof and repeats full revalidation before `SIGKILL`. A process that remains after closing only the selected endpoint returns the distinct `listenerStopped` outcome, removes only that listener row, and never unlocks Force kill. Missing capability/progression state, stale PID, changed identity, endpoint disappearance before signaling, `lsof` failure/timeout, UID mismatch, or protected identity fails closed. macOS exposes no atomic PID handle, so a narrow check-to-signal race remains; the implementation minimizes it with an immediate second `libproc` identity read and never signals process groups.
 - The inventory is capped at 64 listeners, is held in renderer/native memory only, and is never written to the bridge snapshot, NDJSON log, or persistent storage.
 - Other platforms report an explicit unsupported state. The list may include ordinary local TCP services as well as browser apps; command arguments, terminal output, environment variables, and response bodies are never exposed or accepted by the control command.
 
 ### Explicit web frontend registry
 
-Projects that Agent Halo does not recognize automatically may authoritatively register a current local listener through `~/.config/agent-halo/local-web-frontends.v1.json`:
+Projects that Agent Activity does not recognize automatically may authoritatively register a current local listener through `~/.config/agent-activity/local-web-frontends.v1.json`:
 
 ```json
 {
@@ -56,7 +56,7 @@ Projects that Agent Halo does not recognize automatically may authoritatively re
 }
 ```
 
-The registry is positive-only and never downgrades strong automatic evidence. An entry matches only the exact live PID, process-start time within 2 seconds, normalized bind address, and port. Expiry must be in the future but no more than 15 minutes ahead, so a producer refreshes the file while its service is alive. Agent Halo never creates, rewrites, or deletes this file.
+The registry is positive-only and never downgrades strong automatic evidence. An entry matches only the exact live PID, process-start time within 2 seconds, normalized bind address, and port. Expiry must be in the future but no more than 15 minutes ahead, so a producer refreshes the file while its service is alive. Agent Activity never creates, rewrites, or deletes this file.
 
 The reader fails closed: the file must be a current-user regular file opened without following symlinks, use private permissions (`0600` recommended), stay under 32 KiB, declare schema version 1, and contain at most 32 validated non-duplicate entries. Missing or stale entries are ignored. An unsafe/malformed registry is ignored as classification evidence and surfaced as a Services diagnostic while normal listener discovery continues. Producers must write a same-directory temporary file with mode `0600` and atomically rename it into place.
 
@@ -115,7 +115,7 @@ A future notification lane should require a sustained window and remain opt-in. 
 ## Privacy and retention
 
 - Sampling stays inside the local Tauri app.
-- Runtime samples are held in renderer/native memory only and are not appended to Agent Halo NDJSON.
+- Runtime samples are held in renderer/native memory only and are not appended to Agent Activity NDJSON.
 - Ended-identity tombstones contain only the strong local runtime identity and timestamp, are bounded to 512 entries in localStorage, and carry no CPU/memory samples.
 - Letta runtime metrics expose process names for at most five largest descendants, never full command-line arguments; Services exposes the capped listener/process detail and exact matched session ancestry described above, and reads only the bounded explicit registry identity fields. Service-control results contain only status, signal name, process ID, endpoint, and whether the listener remains.
 - No remote telemetry or hosted service is involved.

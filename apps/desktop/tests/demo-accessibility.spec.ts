@@ -8,12 +8,12 @@ test("collapsed notch opens from the keyboard and moves focus into the panel", a
   await page.goto("/?demo=1&demoScenario=done");
   await page.getByRole("button", { name: "Close" }).click();
 
-  const surface = page.getByRole("button", { name: "Open Agent Halo" });
+  const surface = page.getByRole("button", { name: "Open Agent Activity" });
   await expect(surface).toBeVisible();
   await surface.focus();
   await page.keyboard.press("Enter");
 
-  await expect(page.getByRole("region", { name: "Agent Halo panel" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Agent Activity panel" })).toBeVisible();
   const sessionsTab = page.getByRole("tab", { name: "Sessions" });
   await expect(sessionsTab).toBeFocused();
   await expect(sessionsTab).toHaveAttribute("aria-selected", "true");
@@ -22,19 +22,19 @@ test("collapsed notch opens from the keyboard and moves focus into the panel", a
 test("session context receives focus and Escape restores the originating row", async ({ page }) => {
   await page.goto("/?demo=1&demoScenario=multi");
 
-  const sessionRow = page.getByRole("button", { name: "Open agent-halo session details" }).first();
+  const sessionRow = page.getByRole("button", { name: "Open agent-activity session details" }).first();
   await sessionRow.focus();
   await page.keyboard.press("Enter");
 
   const context = page.locator(".session-context-summary");
   await expect(context).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Open agent-halo session details" }).first()).toBeFocused();
+  await expect(page.getByRole("button", { name: "Open agent-activity session details" }).first()).toBeFocused();
 });
 
 test("pointer interaction still allows hover close after keyboard navigation", async ({ page }) => {
   await page.goto("/?demo=1&demoScenario=multi");
-  const surface = page.getByRole("region", { name: "Agent Halo panel" });
+  const surface = page.getByRole("region", { name: "Agent Activity panel" });
   const sessionsTab = page.getByRole("tab", { name: "Sessions" });
 
   await sessionsTab.focus();
@@ -43,7 +43,7 @@ test("pointer interaction still allows hover close after keyboard navigation", a
 
   await sessionsTab.click();
   await page.mouse.move(700, 700);
-  await expect(page.getByRole("button", { name: "Open Agent Halo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open Agent Activity" })).toBeVisible();
 });
 
 test("main section tabs provide roving keyboard navigation and panel relationships", async ({ page }) => {

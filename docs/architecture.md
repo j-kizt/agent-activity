@@ -1,8 +1,8 @@
-# Agent Halo Architecture
+# Agent Activity Architecture
 
 ## Goal
 
-Agent Halo is a native presence layer for AI coding agents. It should show what the current agent is doing — conversation lifecycle, model turns, tool usage, and eventually memory/subagent state — without parsing terminal output as the primary source of truth. It currently supports Letta Code (via mod API) and AGY / Antigravity (via hook adapter).
+Agent Activity is a native presence layer for AI coding agents. It should show what the current agent is doing — conversation lifecycle, model turns, tool usage, and eventually memory/subagent state — without parsing terminal output as the primary source of truth. It currently supports Letta Code (via mod API) and AGY / Antigravity (via hook adapter).
 
 ## Current architecture
 
@@ -11,15 +11,15 @@ Letta Code Mod API                AGY (Antigravity) Hooks API
   conversation_open / tool_start    PreToolUse / PostToolUse / Stop
         |                                    |
         v                                    v
-mods/agent-halo.js              adapters/agy/agent-halo-agy-hook.mjs
-  - normalizes event payloads     - translates AGY hooks → AgentHaloEvent
+mods/agent-activity.js              adapters/agy/agent-activity-agy-hook.mjs
+  - normalizes event payloads     - translates AGY hooks → AgentActivityEvent
   - writes NDJSON audit log       - posts to /ingest with sourceKind: agyHost
   - serves SSE on localhost                  |
         |                                    |
         +------ POST /ingest ←───────────────+
         |
         v
-Agent Halo Bridge (127.0.0.1:47621)
+Agent Activity Bridge (127.0.0.1:47621)
   - /events SSE, /snapshot, /health
   - NDJSON audit log
   - Letta mod owner when available; desktop-supervised standalone fallback otherwise
@@ -34,7 +34,7 @@ Desktop renderer (Tauri)
 
 Letta Code has richer runtime state than Claude/Codex hook-only flows: persistent agent identity, conversation identity, scoped cwd/model, tool events, memory, skills, and subagents. A transcript watcher would see some of this late and indirectly. A mod sees public runtime events as they happen.
 
-AGY (Antigravity) uses a different extension model — lifecycle hooks (`PreToolUse`, `PostToolUse`, `PreInvocation`, `PostInvocation`, `Stop`) invoked as shell commands with JSON on stdin/stdout. The AGY adapter translates these hook events into the same `AgentHaloEvent` envelope and posts them to the bridge via `/ingest`, so the desktop UI and presence model work identically regardless of which agent runtime produced the events.
+AGY (Antigravity) uses a different extension model — lifecycle hooks (`PreToolUse`, `PostToolUse`, `PreInvocation`, `PostInvocation`, `Stop`) invoked as shell commands with JSON on stdin/stdout. The AGY adapter translates these hook events into the same `AgentActivityEvent` envelope and posts them to the bridge via `/ingest`, so the desktop UI and presence model work identically regardless of which agent runtime produced the events.
 
 The desktop owns bridge availability, not every bridge process. Every bridge owner and relay normalizes to the canonical IPv4 loopback host `127.0.0.1`, matching the renderer endpoint. At startup it probes the full local `/health` identity. A healthy Letta or standalone owner is reused; an unrelated listener, timeout, or ambiguous connection failure causes a fail-closed occupied state; only an explicitly refused loopback connection starts the bundled standalone bridge. The supervisor retries after an owned crash or external-owner shutdown, while a parent stdio lease and native exit cleanup prevent the desktop-owned child from becoming a permanent daemon. The renderer hydrates `/snapshot` again after SSE reconnect so a bridge that starts after the WebView does not lose capability or recent-event state.
 
@@ -76,11 +76,11 @@ Pomodoro state uses an absolute persisted deadline rather than a decrementing co
 The desktop frontend supports `?demo=1` plus focused `demoScenario` values so the Notchcode-inspired surface can be inspected without a live Letta bridge. Demo events use the same presence reducer, bounded registry, selectors, components, accessibility behavior, and CSS as live mode.
 
 
-The desktop app now includes a first tray/menu-bar control plane with Show, Hide, and Quit actions. Agent activity itself does not use OS notifications: the closed notch wing expands persistently for real needs-input activity and briefly for turn completion. Status changes—including Attention, Error, Done, and Pomodoro completion—never auto-open the full panel or activate/focus Agent Halo; full expansion is pointer/keyboard/user-command driven. Hover expansion resizes without taking keyboard focus, while explicit keyboard/click navigation may request focus. Pomodoro completion separately uses an explicitly requested silent local macOS alert. Completed rows remain sticky until explicit Clear, while old incomplete activity becomes low-priority inactive history instead of masquerading as a user wait. Active and Completed sessions share one compact scroll surface; workspace groups expand into child session rows so secondary completions retain detail and terminal-host focus access. Trusted Herdr runtime identity focuses the exact pane through its local socket before activating Ghostty; absent/stale identity falls back to the existing Ghostty cwd/title/session match. The Sessions overview uses dense trusted project/status/activity/model/age anatomy, while selecting a session replaces the overview with a state-directed Working, Needs input, Done, Error, Inactive, or Idle context and a clear Back to sessions control. These views remain event-derived and do not fabricate task prompts, permission diffs, answer controls, or Letta process capabilities. The Tauri installer writes the mod plus an idempotent Stop/PermissionRequest hook relay while preserving existing hooks. The Tauri runtime serializes transparent-window resize/focus intent through `set_panel_open`, and its setup view checks the complete mod/hook install before offering install/reinstall.
+The desktop app now includes a first tray/menu-bar control plane with Show, Hide, and Quit actions. Agent activity itself does not use OS notifications: the closed notch wing expands persistently for real needs-input activity and briefly for turn completion. Status changes—including Attention, Error, Done, and Pomodoro completion—never auto-open the full panel or activate/focus Agent Activity; full expansion is pointer/keyboard/user-command driven. Hover expansion resizes without taking keyboard focus, while explicit keyboard/click navigation may request focus. Pomodoro completion separately uses an explicitly requested silent local macOS alert. Completed rows remain sticky until explicit Clear, while old incomplete activity becomes low-priority inactive history instead of masquerading as a user wait. Active and Completed sessions share one compact scroll surface; workspace groups expand into child session rows so secondary completions retain detail and terminal-host focus access. Trusted Herdr runtime identity focuses the exact pane through its local socket before activating Ghostty; absent/stale identity falls back to the existing Ghostty cwd/title/session match. The Sessions overview uses dense trusted project/status/activity/model/age anatomy, while selecting a session replaces the overview with a state-directed Working, Needs input, Done, Error, Inactive, or Idle context and a clear Back to sessions control. These views remain event-derived and do not fabricate task prompts, permission diffs, answer controls, or Letta process capabilities. The Tauri installer writes the mod plus an idempotent Stop/PermissionRequest hook relay while preserving existing hooks. The Tauri runtime serializes transparent-window resize/focus intent through `set_panel_open`, and its setup view checks the complete mod/hook install before offering install/reinstall.
 
 
 ## Notchcode visual contract
 
-Mahiro wants Agent Halo to match Notchcode taste for this project, not a generic AI dashboard. The desktop renderer should therefore use a black notch silhouette, pointer/keyboard-expand dropped sheet, compact expandable session rows, session drill-down, completed-session Clear controls, compact setup/status view, small status glyphs, hairline dividers, and restrained state accents. Avoid blue/cyan glass panels, metric grids, large glowing status orbs, and decorative control-room copy unless Mahiro explicitly changes direction.
+Mahiro wants Agent Activity to match Notchcode taste for this project, not a generic AI dashboard. The desktop renderer should therefore use a black notch silhouette, pointer/keyboard-expand dropped sheet, compact expandable session rows, session drill-down, completed-session Clear controls, compact setup/status view, small status glyphs, hairline dividers, and restrained state accents. Avoid blue/cyan glass panels, metric grids, large glowing status orbs, and decorative control-room copy unless Mahiro explicitly changes direction.
 
 Concrete parity evidence and known gaps live in `docs/notchcode-parity.md`.

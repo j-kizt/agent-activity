@@ -77,9 +77,9 @@ const AGY_CLOUD_CODE_BASE_URLS: [&str; 2] = [
 const AGY_CLOUD_QUOTA_SUMMARY_PATH: &str = "/v1internal:retrieveUserQuotaSummary";
 const AGY_CLOUD_LOAD_CODE_ASSIST_PATH: &str = "/v1internal:loadCodeAssist";
 const AGY_GOOGLE_OAUTH_URL: &str = "https://oauth2.googleapis.com/token";
-const AGY_GOOGLE_CLIENT_ID_ENV: &str = "AGENT_HALO_AGY_GOOGLE_CLIENT_ID";
-const AGY_GOOGLE_CLIENT_SECRET_ENV: &str = "AGENT_HALO_AGY_GOOGLE_CLIENT_SECRET";
-const AGY_GOOGLE_OAUTH_CONFIG_PATH: &str = ".config/agent-halo/agy-google-oauth.json";
+const AGY_GOOGLE_CLIENT_ID_ENV: &str = "AGENT_ACTIVITY_AGY_GOOGLE_CLIENT_ID";
+const AGY_GOOGLE_CLIENT_SECRET_ENV: &str = "AGENT_ACTIVITY_AGY_GOOGLE_CLIENT_SECRET";
+const AGY_GOOGLE_OAUTH_CONFIG_PATH: &str = ".config/agent-activity/agy-google-oauth.json";
 const CLAUDE_USAGE_URL: &str = "https://api.anthropic.com/api/oauth/usage";
 const CLAUDE_REFRESH_URL: &str = "https://platform.claude.com/v1/oauth/token";
 const CLAUDE_CLIENT_ID: &str = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
@@ -2133,7 +2133,7 @@ fn value_to_u64(value: Option<&Value>) -> Option<u64> {
 fn usage_client(provider: &str) -> Result<reqwest::blocking::Client, String> {
     let mut builder = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(12))
-        .user_agent("Agent Halo");
+        .user_agent("Agent Activity");
 
     if let Some(proxy_url) = openusage_proxy_url() {
         let proxy = reqwest::Proxy::all(&proxy_url)
@@ -3751,7 +3751,7 @@ fn parse_antigravity_oauth_client(value: &Value) -> Option<(String, String)> {
 fn probe_antigravity_ls_usage() -> Option<CodexUsageSnapshot> {
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(5))
-        .user_agent("Agent Halo")
+        .user_agent("Agent Activity")
         .danger_accept_invalid_certs(true)
         .build()
         .ok()?;
@@ -4226,7 +4226,7 @@ fn install_claude_hook(app: tauri::AppHandle) -> Result<String, String> {
     let resource_path = app
         .path()
         .resolve(
-            "agent-halo-claude-hook.mjs",
+            "agent-activity-claude-hook.mjs",
             tauri::path::BaseDirectory::Resource,
         )
         .map_err(|e| format!("Failed to resolve resource: {e}"))?;
@@ -4580,7 +4580,7 @@ fn is_valid_herdr_pane_id(pane_id: &str) -> bool {
 
 fn build_herdr_request(method: &str, pane_id: &str) -> Value {
     serde_json::json!({
-        "id": format!("agent-halo-{}-{}", method.replace('.', "-"), std::process::id()),
+        "id": format!("agent-activity-{}-{}", method.replace('.', "-"), std::process::id()),
         "method": method,
         "params": { "target": pane_id },
     })
@@ -4771,7 +4771,7 @@ fn display_preference_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     app.path()
         .app_config_dir()
         .map(|directory| directory.join(DISPLAY_PREFERENCE_FILE))
-        .map_err(|error| format!("Could not resolve Agent Halo config directory: {error}"))
+        .map_err(|error| format!("Could not resolve Agent Activity config directory: {error}"))
 }
 
 fn read_display_preference(app: &tauri::AppHandle) -> Option<DisplayPreference> {
@@ -4789,7 +4789,7 @@ fn write_display_preference(
         .parent()
         .ok_or_else(|| "Display preference path has no parent directory".to_string())?;
     fs::create_dir_all(parent)
-        .map_err(|error| format!("Could not create Agent Halo config directory: {error}"))?;
+        .map_err(|error| format!("Could not create Agent Activity config directory: {error}"))?;
     let temporary_path = path.with_extension("json.tmp");
     let contents = serde_json::to_vec_pretty(preference)
         .map_err(|error| format!("Could not encode display preference: {error}"))?;
@@ -5076,7 +5076,7 @@ fn set_panel_open(
     height: f64,
 ) -> Result<(), String> {
     set_main_window_frame(&window, width, height)
-        .map_err(|error| format!("Failed to resize/recenter Agent Halo window: {error}"))?;
+        .map_err(|error| format!("Failed to resize/recenter Agent Activity window: {error}"))?;
 
     if open && focus {
         let _ = window.set_focus();
@@ -5203,7 +5203,7 @@ fn reconcile_display_position(window: &tauri::WebviewWindow) -> Result<(), Strin
         if matches || position_main_window_with_appkit(window, None, false) {
             return Ok(());
         }
-        return Err("Could not reconcile Agent Halo display position".to_string());
+        return Err("Could not reconcile Agent Activity display position".to_string());
     }
 
     let (sender, receiver) = mpsc::channel();
@@ -5223,7 +5223,7 @@ fn reconcile_display_position(window: &tauri::WebviewWindow) -> Result<(), Strin
     {
         Ok(())
     } else {
-        Err("Timed out while reconciling Agent Halo display position".to_string())
+        Err("Timed out while reconciling Agent Activity display position".to_string())
     }
 }
 
@@ -5233,7 +5233,7 @@ fn reconcile_display_position(window: &tauri::WebviewWindow) -> Result<(), Strin
         return Ok(());
     }
     position_main_window(window)
-        .map_err(|error| format!("Could not reconcile Agent Halo display position: {error}"))
+        .map_err(|error| format!("Could not reconcile Agent Activity display position: {error}"))
 }
 
 #[cfg(target_os = "macos")]
@@ -5260,7 +5260,7 @@ fn position_main_window_on_selected_display(window: &tauri::WebviewWindow) -> Re
     {
         Ok(())
     } else {
-        Err("The selected display disconnected before Agent Halo could move".to_string())
+        Err("The selected display disconnected before Agent Activity could move".to_string())
     }
 }
 
@@ -5268,10 +5268,10 @@ fn position_main_window_on_selected_display(window: &tauri::WebviewWindow) -> Re
 fn position_main_window_on_selected_display(window: &tauri::WebviewWindow) -> Result<(), String> {
     let state = display_state(window.clone())?;
     if state.selected_display_id.is_none() {
-        return Err("The selected display disconnected before Agent Halo could move".to_string());
+        return Err("The selected display disconnected before Agent Activity could move".to_string());
     }
     position_main_window(window)
-        .map_err(|error| format!("Could not move Agent Halo to the selected display: {error}"))
+        .map_err(|error| format!("Could not move Agent Activity to the selected display: {error}"))
 }
 
 fn position_main_window_for_logical_width(
@@ -5420,13 +5420,13 @@ fn toggle_main_window(app: &tauri::AppHandle) {
 }
 
 fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
-    let show = MenuItem::with_id(app, TRAY_SHOW, "Show Agent Halo", true, None::<&str>)?;
+    let show = MenuItem::with_id(app, TRAY_SHOW, "Show Agent Activity", true, None::<&str>)?;
     let hide = MenuItem::with_id(app, TRAY_HIDE, "Hide Overlay", true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
     let quit = MenuItem::with_id(app, TRAY_QUIT, "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &hide, &separator, &quit])?;
-    TrayIconBuilder::with_id("agent-halo")
-        .tooltip("Agent Halo")
+    TrayIconBuilder::with_id("agent-activity")
+        .tooltip("Agent Activity")
         .icon(tauri::include_image!("icons/tray-icon.png"))
         .icon_as_template(true)
         .menu(&menu)
@@ -5489,16 +5489,16 @@ pub fn run() {
             app.state::<DisplayPreferenceState>().set(preference);
 
             match app.path().resolve(
-                "agent-halo-bridge.mjs",
+                "agent-activity-bridge.mjs",
                 tauri::path::BaseDirectory::Resource,
             ) {
                 Ok(path) => {
                     if let Err(error) = app.state::<StandaloneBridgeState>().start(path) {
-                        eprintln!("Agent Halo standalone bridge is unavailable: {error}");
+                        eprintln!("Agent Activity standalone bridge is unavailable: {error}");
                     }
                 }
                 Err(error) => {
-                    eprintln!("Agent Halo standalone bridge resource is unavailable: {error}");
+                    eprintln!("Agent Activity standalone bridge resource is unavailable: {error}");
                 }
             }
 
@@ -5506,7 +5506,7 @@ pub fn run() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("failed to build Agent Halo desktop");
+        .expect("failed to build Agent Activity desktop");
 
     app.run(|app_handle, event| match event {
         tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit => {
@@ -5609,15 +5609,15 @@ mod display_selection_tests {
     #[test]
     #[ignore = "requires an explicitly selected live Herdr pane and activates Ghostty"]
     fn live_herdr_focus_smoke() {
-        let socket = std::env::var("AGENT_HALO_TEST_HERDR_SOCKET").expect("live Herdr socket");
-        let pane = std::env::var("AGENT_HALO_TEST_HERDR_PANE").expect("live Herdr pane");
+        let socket = std::env::var("AGENT_ACTIVITY_TEST_HERDR_SOCKET").expect("live Herdr socket");
+        let pane = std::env::var("AGENT_ACTIVITY_TEST_HERDR_PANE").expect("live Herdr pane");
         let conversation =
-            std::env::var("AGENT_HALO_TEST_CONVERSATION").expect("live conversation");
-        let source_pid = std::env::var("AGENT_HALO_TEST_SOURCE_PID")
+            std::env::var("AGENT_ACTIVITY_TEST_CONVERSATION").expect("live conversation");
+        let source_pid = std::env::var("AGENT_ACTIVITY_TEST_SOURCE_PID")
             .expect("live source PID")
             .parse::<u32>()
             .expect("numeric source PID");
-        let source_started_at_ms = std::env::var("AGENT_HALO_TEST_SOURCE_STARTED_AT_MS")
+        let source_started_at_ms = std::env::var("AGENT_ACTIVITY_TEST_SOURCE_STARTED_AT_MS")
             .expect("live source start")
             .parse::<u64>()
             .expect("numeric source start");

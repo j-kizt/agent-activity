@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    agent_halo_desktop_lib::run()
+    agent_activity_desktop_lib::run()
 }

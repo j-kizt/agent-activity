@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Agent Halo",
+  "productName": "Agent Activity",
   "version": "0.1.7",
-  "identifier": "com.mahirocoko.agent-halo",
+  "identifier": "com.j-kizt.agent-activity",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Agent Halo",
+        "title": "Agent Activity",
         "width": 420,
         "height": 560,
         "resizable": true,
@@ -41,8 +41,8 @@
       "icons/icon.icns"
     ],
     "resources": {
-      "../../../adapters/claude/agent-halo-claude-hook.mjs": "agent-halo-claude-hook.mjs",
-      "../../../adapters/bridge/agent-halo-bridge.mjs": "agent-halo-bridge.mjs"
+      "../../../adapters/claude/agent-activity-claude-hook.mjs": "agent-activity-claude-hook.mjs",
+      "../../../adapters/bridge/agent-activity-bridge.mjs": "agent-activity-bridge.mjs"
     }
   }
 }

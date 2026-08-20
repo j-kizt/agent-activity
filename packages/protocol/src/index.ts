@@ -1,7 +1,7 @@
-export const AGENT_HALO_PROTOCOL_VERSION = 2 as const;
+export const AGENT_ACTIVITY_PROTOCOL_VERSION = 2 as const;
 
 
-export interface IAgentHaloBridgeCapabilities {
+export interface IAgentActivityBridgeCapabilities {
   events: {
     lifecycle: boolean;
     turns: boolean;
@@ -24,7 +24,7 @@ export interface IAgentHaloBridgeCapabilities {
   };
 }
 
-export const createDefaultBridgeCapabilities = (): IAgentHaloBridgeCapabilities => ({
+export const createDefaultBridgeCapabilities = (): IAgentActivityBridgeCapabilities => ({
   events: {
     lifecycle: false,
     turns: false,
@@ -47,7 +47,7 @@ export const createDefaultBridgeCapabilities = (): IAgentHaloBridgeCapabilities 
   },
 });
 
-export type AgentHaloEventType =
+export type AgentActivityEventType =
   | "bridge_ready"
   | "conversation_open"
   | "conversation_close"
@@ -63,15 +63,15 @@ export type AgentHaloEventType =
   | "llm_end"
   | "bridge_error";
 
-export interface IAgentHaloEventRuntime {
+export interface IAgentActivityEventRuntime {
   sourcePid: number;
   sourcePpid: number | null;
   sourceStartedAtMs: number;
   sourceKind: "lettaHost" | "agyHost" | "hookRelay" | "unknown" | string;
-  herdr?: IAgentHaloHerdrTarget | null;
+  herdr?: IAgentActivityHerdrTarget | null;
 }
 
-export interface IAgentHaloHerdrTarget {
+export interface IAgentActivityHerdrTarget {
   socketPath: string;
   paneId: string;
   sourcePid: number;
@@ -80,10 +80,10 @@ export interface IAgentHaloHerdrTarget {
   tabId?: string | null;
 }
 
-export interface IAgentHaloBaseEvent {
-  version: typeof AGENT_HALO_PROTOCOL_VERSION;
+export interface IAgentActivityBaseEvent {
+  version: typeof AGENT_ACTIVITY_PROTOCOL_VERSION;
   id: string;
-  type: AgentHaloEventType;
+  type: AgentActivityEventType;
   timestamp: string;
   agentId: string | null;
   agentName?: string | null;
@@ -91,10 +91,10 @@ export interface IAgentHaloBaseEvent {
   cwd?: string | null;
   model?: string | null;
   permissionMode?: string | null;
-  runtime?: IAgentHaloEventRuntime | null;
+  runtime?: IAgentActivityEventRuntime | null;
 }
 
-export interface IAgentHaloBridgeReadyEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityBridgeReadyEvent extends IAgentActivityBaseEvent {
   type: "bridge_ready";
   data: {
     port: number;
@@ -104,7 +104,7 @@ export interface IAgentHaloBridgeReadyEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloConversationOpenEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityConversationOpenEvent extends IAgentActivityBaseEvent {
   type: "conversation_open";
   data: {
     reason: "startup" | "new" | "resume" | "fork" | string;
@@ -112,7 +112,7 @@ export interface IAgentHaloConversationOpenEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloConversationCloseEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityConversationCloseEvent extends IAgentActivityBaseEvent {
   type: "conversation_close";
   data: {
     durationMs: number | null;
@@ -122,7 +122,7 @@ export interface IAgentHaloConversationCloseEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloTurnStartEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityTurnStartEvent extends IAgentActivityBaseEvent {
   type: "turn_start";
   data: {
     inputCount: number;
@@ -130,7 +130,7 @@ export interface IAgentHaloTurnStartEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloTurnStopEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityTurnStopEvent extends IAgentActivityBaseEvent {
   type: "turn_stop";
   data: {
     hookEventName: "Stop" | string;
@@ -139,7 +139,7 @@ export interface IAgentHaloTurnStopEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloTurnCompleteEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityTurnCompleteEvent extends IAgentActivityBaseEvent {
   type: "turn_complete";
   data: {
     hookEventName: "Stop" | string;
@@ -148,7 +148,7 @@ export interface IAgentHaloTurnCompleteEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloAttentionRequestedEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityAttentionRequestedEvent extends IAgentActivityBaseEvent {
   type: "attention_requested";
   data: {
     hookEventName: "PermissionRequest" | "AskUserQuestion" | string;
@@ -159,7 +159,7 @@ export interface IAgentHaloAttentionRequestedEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloToolStartEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityToolStartEvent extends IAgentActivityBaseEvent {
   type: "tool_start";
   data: {
     toolCallId: string | null;
@@ -168,7 +168,7 @@ export interface IAgentHaloToolStartEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloToolEndEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityToolEndEvent extends IAgentActivityBaseEvent {
   type: "tool_end";
   data: {
     toolCallId: string | null;
@@ -178,14 +178,14 @@ export interface IAgentHaloToolEndEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloCompactStartEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityCompactStartEvent extends IAgentActivityBaseEvent {
   type: "compact_start";
   data: {
     trigger: "manual" | "context_window_overflow" | "context_window_limit" | string;
   };
 }
 
-export interface IAgentHaloCompactEndEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityCompactEndEvent extends IAgentActivityBaseEvent {
   type: "compact_end";
   data: {
     trigger: "manual" | "context_window_overflow" | "context_window_limit" | string;
@@ -196,7 +196,7 @@ export interface IAgentHaloCompactEndEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloLlmStartEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityLlmStartEvent extends IAgentActivityBaseEvent {
   type: "llm_start";
   data: {
     model: string;
@@ -205,13 +205,13 @@ export interface IAgentHaloLlmStartEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export interface IAgentHaloLlmEndError {
+export interface IAgentActivityLlmEndError {
   message: string;
   errorType: "llm_error" | "local_backend_error" | string;
   retryable: boolean | null;
 }
 
-export interface IAgentHaloLlmEndEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityLlmEndEvent extends IAgentActivityBaseEvent {
   type: "llm_end";
   data: {
     model: string;
@@ -222,11 +222,11 @@ export interface IAgentHaloLlmEndEvent extends IAgentHaloBaseEvent {
       completionTokens: number | null;
       totalTokens: number | null;
     } | null;
-    error?: IAgentHaloLlmEndError;
+    error?: IAgentActivityLlmEndError;
   };
 }
 
-export interface IAgentHaloBridgeErrorEvent extends IAgentHaloBaseEvent {
+export interface IAgentActivityBridgeErrorEvent extends IAgentActivityBaseEvent {
   type: "bridge_error";
   data: {
     message: string;
@@ -234,25 +234,25 @@ export interface IAgentHaloBridgeErrorEvent extends IAgentHaloBaseEvent {
   };
 }
 
-export type AgentHaloEvent =
-  | IAgentHaloBridgeReadyEvent
-  | IAgentHaloConversationOpenEvent
-  | IAgentHaloConversationCloseEvent
-  | IAgentHaloTurnStartEvent
-  | IAgentHaloTurnStopEvent
-  | IAgentHaloTurnCompleteEvent
-  | IAgentHaloAttentionRequestedEvent
-  | IAgentHaloToolStartEvent
-  | IAgentHaloToolEndEvent
-  | IAgentHaloCompactStartEvent
-  | IAgentHaloCompactEndEvent
-  | IAgentHaloLlmStartEvent
-  | IAgentHaloLlmEndEvent
-  | IAgentHaloBridgeErrorEvent;
+export type AgentActivityEvent =
+  | IAgentActivityBridgeReadyEvent
+  | IAgentActivityConversationOpenEvent
+  | IAgentActivityConversationCloseEvent
+  | IAgentActivityTurnStartEvent
+  | IAgentActivityTurnStopEvent
+  | IAgentActivityTurnCompleteEvent
+  | IAgentActivityAttentionRequestedEvent
+  | IAgentActivityToolStartEvent
+  | IAgentActivityToolEndEvent
+  | IAgentActivityCompactStartEvent
+  | IAgentActivityCompactEndEvent
+  | IAgentActivityLlmStartEvent
+  | IAgentActivityLlmEndEvent
+  | IAgentActivityBridgeErrorEvent;
 
 export type {
-  AgentHaloPresenceStatus,
-  IAgentHaloPresence,
-  IAgentHaloPresenceView,
+  AgentActivityPresenceStatus,
+  IAgentActivityPresence,
+  IAgentActivityPresenceView,
 } from "./presence.js";
 export { createInitialPresence, getPresenceView, reducePresence } from "./presence.js";

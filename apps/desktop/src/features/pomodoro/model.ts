@@ -1,8 +1,8 @@
 import type { IPomodoroCompletion, IPomodoroSettings, IPomodoroState, PomodoroPhase } from "./types";
 
-export const POMODORO_STORAGE_KEY = "agent-halo.pomodoro";
-export const POMODORO_SETTINGS_STORAGE_KEY = "agent-halo.pomodoro-settings";
-export const POMODORO_NOTIFICATION_ID = "agent-halo.pomodoro";
+export const POMODORO_STORAGE_KEY = "agent-activity.pomodoro";
+export const POMODORO_SETTINGS_STORAGE_KEY = "agent-activity.pomodoro-settings";
+export const POMODORO_NOTIFICATION_ID = "agent-activity.pomodoro";
 export const POMODORO_COMPLETION_SIGNAL_MS = 10_000;
 export const POMODORO_PET_HANDOFF_WINDOW_MS = 3_000;
 export const POMODORO_PET_FALLBACK_DELAY_MS = 5_000;

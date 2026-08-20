@@ -5,10 +5,10 @@ import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = resolve(new URL("..", import.meta.url).pathname);
-const appName = "Agent Halo.app";
+const appName = "Agent Activity.app";
 const builtApp = join(root, "apps/desktop/src-tauri/target/release/bundle/macos", appName);
 const fallbackApp = join(root, "apps/desktop/src-tauri/target/release", appName);
-const installDir = process.env.AGENT_HALO_INSTALL_DIR || "/Applications";
+const installDir = process.env.AGENT_ACTIVITY_INSTALL_DIR || "/Applications";
 const installPath = join(installDir, appName);
 const userApplicationsPath = join(homedir(), "Applications", appName);
 
@@ -21,14 +21,14 @@ run("pnpm", ["desktop:build"]);
 
 const sourceApp = existsSync(builtApp) ? builtApp : fallbackApp;
 if (!existsSync(sourceApp)) {
-  console.error(`Agent Halo app bundle not found at ${builtApp}`);
+  console.error(`Agent Activity app bundle not found at ${builtApp}`);
   process.exit(1);
 }
 
 // Replacing an app bundle does not reload an already-running process. Stop the
 // current menu-bar instance before copying so the installed UI cannot remain on
 // stale in-memory code after a successful install.
-spawnSync("pkill", ["-x", "agent-halo-desktop"], { stdio: "ignore" });
+spawnSync("pkill", ["-x", "agent-activity-desktop"], { stdio: "ignore" });
 
 try {
   mkdirSync(installDir, { recursive: true });
@@ -37,9 +37,9 @@ try {
 } catch (error) {
   console.error(`Failed to install ${appName} → ${installPath}`);
   console.error(error instanceof Error ? error.message : error);
-  if (!process.env.AGENT_HALO_INSTALL_DIR && installDir === "/Applications") {
+  if (!process.env.AGENT_ACTIVITY_INSTALL_DIR && installDir === "/Applications") {
     console.error(
-      `If /Applications is not writable from your shell, rerun with AGENT_HALO_INSTALL_DIR=${join(
+      `If /Applications is not writable from your shell, rerun with AGENT_ACTIVITY_INSTALL_DIR=${join(
         homedir(),
         "Applications",
       )} pnpm desktop:install`,
@@ -62,4 +62,4 @@ run("open", ["-g", installPath]);
 
 console.log(`Installed and restarted ${appName} → ${installPath}`);
 console.log("Open it, then use Setup → Install/Reinstall to install the Letta mod if needed.");
-console.log("After first mod install, reload or restart Letta Code so it loads ~/.letta/mods/agent-halo.js.");
+console.log("After first mod install, reload or restart Letta Code so it loads ~/.letta/mods/agent-activity.js.");

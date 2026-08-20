@@ -1,14 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-const stopwatchStorageKey = "agent-halo.stopwatch";
-const stopwatchHistoryStorageKey = "agent-halo.stopwatch-history";
-const pomodoroStorageKey = "agent-halo.pomodoro";
+const stopwatchStorageKey = "agent-activity.stopwatch";
+const stopwatchHistoryStorageKey = "agent-activity.stopwatch-history";
+const pomodoroStorageKey = "agent-activity.pomodoro";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    if (window.sessionStorage.getItem("agent-halo.stopwatch-test-ready") === "true") return;
+    if (window.sessionStorage.getItem("agent-activity.stopwatch-test-ready") === "true") return;
     window.localStorage.clear();
-    window.sessionStorage.setItem("agent-halo.stopwatch-test-ready", "true");
+    window.sessionStorage.setItem("agent-activity.stopwatch-test-ready", "true");
   });
 });
 
@@ -99,8 +99,8 @@ test("Focus tool tabs rove across Pomodoro, Stopwatch, and Move with wrap, Home,
 
 test("Focus Move launcher shows browser-runtime unavailability without hiding manual actions", async ({ page }) => {
   await page.addInitScript(() => {
-    window.localStorage.setItem("agent-halo.completion-pet-enabled", "false");
-    window.localStorage.setItem("agent-halo.movement-break-enabled", "false");
+    window.localStorage.setItem("agent-activity.completion-pet-enabled", "false");
+    window.localStorage.setItem("agent-activity.movement-break-enabled", "false");
   });
   await page.goto("/?demo=1&demoScenario=idle");
   await page.getByRole("tab", { name: "Focus" }).click();
@@ -114,8 +114,8 @@ test("Focus Move launcher shows browser-runtime unavailability without hiding ma
 
 test("Focus Move launcher manually summons schema-v2 companions without notifications or Pomodoro mutation", async ({ page }) => {
   await page.addInitScript((key) => {
-    window.localStorage.setItem("agent-halo.completion-pet-enabled", "false");
-    window.localStorage.setItem("agent-halo.movement-break-enabled", "false");
+    window.localStorage.setItem("agent-activity.completion-pet-enabled", "false");
+    window.localStorage.setItem("agent-activity.movement-break-enabled", "false");
     window.localStorage.setItem(key, JSON.stringify({
       schemaVersion: 2,
       phase: "focus",
@@ -138,7 +138,7 @@ test("Focus Move launcher manually summons schema-v2 companions without notifica
         if (command === "notification_permission_state") return "authorized";
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -192,7 +192,7 @@ test("Pet Open Focus action activates and focuses the main Focus tab", async ({ 
         if (command === "notification_permission_state") return "authorized";
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -265,7 +265,7 @@ test("Stopwatch actions never schedule notifications, summon Pet, or change Keep
         if (command === "take_completion_pet_action") return null;
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -321,7 +321,7 @@ test("Attention overrides Stopwatch while Stopwatch overrides ordinary agent wor
 test("Finishing saves local history and clearing it leaves the current Stopwatch running", async ({ page }) => {
   const now = Date.now();
   await page.addInitScript(([key, now]) => {
-    if (window.sessionStorage.getItem("agent-halo.stopwatch-history-seeded") === "true") return;
+    if (window.sessionStorage.getItem("agent-activity.stopwatch-history-seeded") === "true") return;
     window.localStorage.setItem(key, JSON.stringify({
       schemaVersion: 1,
       status: "paused",
@@ -329,7 +329,7 @@ test("Finishing saves local history and clearing it leaves the current Stopwatch
       runningSince: null,
       sessionStartedAt: now - 120_000,
     }));
-    window.sessionStorage.setItem("agent-halo.stopwatch-history-seeded", "true");
+    window.sessionStorage.setItem("agent-activity.stopwatch-history-seeded", "true");
   }, [stopwatchStorageKey, now] as const);
 
   await page.goto("/?demo=1&demoScenario=idle");

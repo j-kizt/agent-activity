@@ -113,7 +113,7 @@ function render(event) {
   const eventLabel = event ? `${event.type} @ ${event.timestamp}` : "snapshot";
 
   console.clear();
-  console.log("Agent Halo Viewer");
+  console.log("Agent Activity Viewer");
   console.log("─────────────────");
   console.log(`Status:       ${view.label}`);
   console.log(`Agent:        ${agent}`);
@@ -174,7 +174,7 @@ async function connect() {
 }
 
 connect().catch((error) => {
-  console.error(`Agent Halo Viewer failed: ${error.message}`);
+  console.error(`Agent Activity Viewer failed: ${error.message}`);
   console.error("Is the Letta mod active? Try /reload, then check http://127.0.0.1:47621/health");
   process.exitCode = 1;
 });

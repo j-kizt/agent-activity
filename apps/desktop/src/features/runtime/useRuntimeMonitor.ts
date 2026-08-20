@@ -39,7 +39,7 @@ export const useRuntimeMonitor = ({ canUseNativeControls, demoMode, registry, se
     }
     if (!canUseNativeControls) {
       setServices([]);
-      setServicesError("Local services need the native Agent Halo app");
+      setServicesError("Local services need the native Agent Activity app");
       return;
     }
     servicesLoadingRef.current = true;
@@ -87,7 +87,7 @@ export const useRuntimeMonitor = ({ canUseNativeControls, demoMode, registry, se
         status: "unsupported",
         signal: null,
         stillListening: false,
-        error: "Local service control needs the native Agent Halo app",
+        error: "Local service control needs the native Agent Activity app",
       };
     }
     if (servicesControlInFlightRef.current) {

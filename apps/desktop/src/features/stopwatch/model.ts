@@ -1,7 +1,7 @@
 import type { IStopwatchFinishResult, IStopwatchState } from "./types";
 
-export const STOPWATCH_STORAGE_KEY = "agent-halo.stopwatch";
-export const STOPWATCH_HISTORY_STORAGE_KEY = "agent-halo.stopwatch-history";
+export const STOPWATCH_STORAGE_KEY = "agent-activity.stopwatch";
+export const STOPWATCH_HISTORY_STORAGE_KEY = "agent-activity.stopwatch-history";
 
 export const createStopwatchState = (): IStopwatchState => ({
   schemaVersion: 1,

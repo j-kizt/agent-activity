@@ -17,7 +17,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const SOURCE_HOOK = join(HERE, "..", "adapters", "claude", "agent-halo-claude-hook.mjs");
+const SOURCE_HOOK = join(HERE, "..", "adapters", "claude", "agent-activity-claude-hook.mjs");
 const CONFIG_DIR = join(homedir(), ".config", "agent-activity");
 const INSTALLED_HOOK = join(CONFIG_DIR, "agent-activity-claude-hook.mjs");
 

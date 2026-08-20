@@ -1,10 +1,10 @@
-import type { IAgentHaloEventRuntime } from "@agent-halo/protocol";
+import type { IAgentActivityEventRuntime } from "@agent-activity/protocol";
 import type { ILocalService, ILocalServiceOwnerTarget, IRuntimeTargetSource } from "./types";
 
 const GIB = 1024 ** 3;
 export const LOCAL_SERVICE_OWNER_TARGET_LIMIT = 512;
 
-const isHostRuntime = (runtime: IAgentHaloEventRuntime | null | undefined): runtime is IAgentHaloEventRuntime =>
+const isHostRuntime = (runtime: IAgentActivityEventRuntime | null | undefined): runtime is IAgentActivityEventRuntime =>
   runtime?.sourceKind === "lettaHost" && Number.isInteger(runtime.sourcePid) && runtime.sourcePid > 1 && Number.isFinite(runtime.sourceStartedAtMs);
 
 export const buildLocalServiceOwnerTargets = ({ sessions, registry }: IRuntimeTargetSource): ILocalServiceOwnerTarget[] => {
@@ -105,8 +105,8 @@ export const createDemoLocalServices = (): ILocalService[] => [
     webFrontend: true,
     httpTitle: "MORROW — ONE",
     url: "http://127.0.0.1:4173",
-    cwd: "/Users/mahiro/ghq/github.com/mahirocoko/building-frontends-pilot-morrow-one",
-    owner: { conversationId: "local-conv-mahirocoko", project: "mahirocoko", herdrPaneId: "wB:pH" },
+    cwd: "/Users/mahiro/ghq/github.com/j-kizt/building-frontends-pilot-morrow-one",
+    owner: { conversationId: "local-conv-j-kizt", project: "j-kizt", herdrPaneId: "wB:pH" },
     controlAvailable: true,
     controlUnavailableReason: null,
   },
@@ -115,7 +115,7 @@ export const createDemoLocalServices = (): ILocalService[] => [
     processStartTimeMs: DEMO_SERVICES_BASE_STARTED_AT_MS - 3 * 60 * 60_000,
     processName: "bun",
     parentProcessId: 16_500,
-    parentProcessName: "Agent Halo",
+    parentProcessName: "Agent Activity",
     executablePath: "/Users/mahiro/.bun/bin/bun",
     userId: 501,
     physicalFootprintBytes: 42 * 1024 ** 2,
@@ -126,10 +126,10 @@ export const createDemoLocalServices = (): ILocalService[] => [
     webFrontend: false,
     httpTitle: null,
     url: "http://127.0.0.1:47621",
-    cwd: "/Users/mahiro/ghq/github.com/mahirocoko/agent-halo",
-    owner: { conversationId: "local-conv-agent-halo", project: "agent-halo", herdrPaneId: "wV:p1" },
+    cwd: "/Users/mahiro/ghq/github.com/j-kizt/agent-activity",
+    owner: { conversationId: "local-conv-agent-activity", project: "agent-activity", herdrPaneId: "wV:p1" },
     controlAvailable: false,
-    controlUnavailableReason: "Agent Halo bridge is protected",
+    controlUnavailableReason: "Agent Activity bridge is protected",
   },
   {
     processId: 16_590,
@@ -147,8 +147,8 @@ export const createDemoLocalServices = (): ILocalService[] => [
     webFrontend: false,
     httpTitle: "Directory listing for /",
     url: "http://127.0.0.1:8000",
-    cwd: "/Users/mahiro/ghq/github.com/mahirocoko/building-frontends-pilot-morrow-one",
-    owner: { conversationId: "local-conv-mahirocoko", project: "mahirocoko", herdrPaneId: "wB:pH" },
+    cwd: "/Users/mahiro/ghq/github.com/j-kizt/building-frontends-pilot-morrow-one",
+    owner: { conversationId: "local-conv-j-kizt", project: "j-kizt", herdrPaneId: "wB:pH" },
     controlAvailable: true,
     controlUnavailableReason: null,
   },

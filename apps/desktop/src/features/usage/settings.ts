@@ -1,6 +1,6 @@
 import type { IUsageSettings, UsageTimeFormat } from "./types";
 
-const STORAGE_KEY = "agent-halo.usage-settings";
+const STORAGE_KEY = "agent-activity.usage-settings";
 const VALID_REFRESH_MINUTES = [5, 15, 30, 60];
 
 export const DEFAULT_USAGE_SETTINGS: IUsageSettings = {

@@ -1,4 +1,4 @@
-import type { AgentHaloEvent } from "@agent-halo/protocol";
+import type { AgentActivityEvent } from "@agent-activity/protocol";
 import { MAX_RECENT_EVENTS, MAX_SESSION_EVENTS_PER_SESSION } from "./constants";
 import type { SessionEventRegistry } from "./types";
 
@@ -13,13 +13,13 @@ export const isSessionEventRegistry = (value: unknown): value is SessionEventReg
         (event) =>
           typeof event === "object" &&
           event !== null &&
-          typeof (event as AgentHaloEvent).id === "string" &&
-          typeof (event as AgentHaloEvent).timestamp === "string" &&
-          typeof (event as AgentHaloEvent).conversationId === "string",
+          typeof (event as AgentActivityEvent).id === "string" &&
+          typeof (event as AgentActivityEvent).timestamp === "string" &&
+          typeof (event as AgentActivityEvent).conversationId === "string",
       ),
   );
 
-export const normalizeSessionEventIdentity = (event: AgentHaloEvent): AgentHaloEvent => {
+export const normalizeSessionEventIdentity = (event: AgentActivityEvent): AgentActivityEvent => {
   if (event.conversationId !== "default") return event;
 
   const conversationId = event.agentId
@@ -30,22 +30,22 @@ export const normalizeSessionEventIdentity = (event: AgentHaloEvent): AgentHaloE
   return { ...event, conversationId };
 };
 
-export const sortEventsNewestFirst = (events: AgentHaloEvent[]): AgentHaloEvent[] =>
+export const sortEventsNewestFirst = (events: AgentActivityEvent[]): AgentActivityEvent[] =>
   [...events].sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp));
 
 export const mergeSessionEvents = (
   current: SessionEventRegistry,
-  incoming: AgentHaloEvent[],
+  incoming: AgentActivityEvent[],
 ): SessionEventRegistry => {
   if (incoming.length === 0) return current;
 
-  const incomingByConversation = new Map<string, Map<string, AgentHaloEvent>>();
+  const incomingByConversation = new Map<string, Map<string, AgentActivityEvent>>();
   for (const rawEvent of incoming) {
     const event = normalizeSessionEventIdentity(rawEvent);
     if (!event.conversationId) continue;
 
     const byId =
-      incomingByConversation.get(event.conversationId) ?? new Map<string, AgentHaloEvent>();
+      incomingByConversation.get(event.conversationId) ?? new Map<string, AgentActivityEvent>();
     byId.set(event.id, event);
     incomingByConversation.set(event.conversationId, byId);
   }
@@ -69,12 +69,12 @@ export const normalizeSessionEventRegistry = (
 ): SessionEventRegistry => mergeSessionEvents({}, Object.values(registry).flat());
 
 export const appendRecentEvent = (
-  events: AgentHaloEvent[],
-  event: AgentHaloEvent,
-): AgentHaloEvent[] => [event, ...events].slice(0, MAX_RECENT_EVENTS);
+  events: AgentActivityEvent[],
+  event: AgentActivityEvent,
+): AgentActivityEvent[] => [event, ...events].slice(0, MAX_RECENT_EVENTS);
 
-export const getUniqueSortedEvents = (events: AgentHaloEvent[]): AgentHaloEvent[] => {
-  const byId = new Map<string, AgentHaloEvent>();
+export const getUniqueSortedEvents = (events: AgentActivityEvent[]): AgentActivityEvent[] => {
+  const byId = new Map<string, AgentActivityEvent>();
   for (const event of events) byId.set(event.id, event);
   return sortEventsNewestFirst([...byId.values()]);
 };

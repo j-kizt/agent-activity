@@ -3,10 +3,10 @@ import {
   createInitialPresence,
   getPresenceView,
   reducePresence,
-  type AgentHaloEvent,
-  type IAgentHaloBridgeCapabilities,
-  type IAgentHaloPresence,
-} from "@agent-halo/protocol";
+  type AgentActivityEvent,
+  type IAgentActivityBridgeCapabilities,
+  type IAgentActivityPresence,
+} from "@agent-activity/protocol";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LLM_STALE_AFTER_MS, MAX_RECENT_EVENTS, STALE_AFTER_MS } from "../session/constants";
 import {
@@ -27,18 +27,18 @@ export interface IConnectionState {
   message: string | null;
 }
 
-export interface IAgentHaloPresenceOptions {
+export interface IAgentActivityPresenceOptions {
   demoMode: boolean;
   demoScenario: string | null;
 }
 
-export interface IAgentHaloPresenceResult {
-  capabilities: IAgentHaloBridgeCapabilities;
+export interface IAgentActivityPresenceResult {
+  capabilities: IAgentActivityBridgeCapabilities;
   connection: IConnectionState;
-  lastLiveEvent: AgentHaloEvent | null;
+  lastLiveEvent: AgentActivityEvent | null;
   now: Date;
-  presence: IAgentHaloPresence;
-  recentEvents: AgentHaloEvent[];
+  presence: IAgentActivityPresence;
+  recentEvents: AgentActivityEvent[];
   refreshCapabilities: () => Promise<boolean>;
   sessionEventRegistry: SessionEventRegistry;
   setSessionEventRegistry: React.Dispatch<React.SetStateAction<SessionEventRegistry>>;
@@ -52,7 +52,7 @@ const readBoolean = (value: unknown, key: string, fallback: boolean) =>
     ? (value as Record<string, boolean>)[key]
     : fallback;
 
-const normalizeCapabilities = (value: unknown): IAgentHaloBridgeCapabilities => {
+const normalizeCapabilities = (value: unknown): IAgentActivityBridgeCapabilities => {
   const fallback = createDefaultBridgeCapabilities();
   if (typeof value !== "object" || value === null) return fallback;
   const record = value as Record<string, unknown>;
@@ -114,13 +114,13 @@ const base = (scenario: string, timestamp: string) => ({
   agentId: "agent-demo-mahiro-code",
   agentName: "Mahiro Code",
   conversationId: `local-conv-demo-${scenario}`,
-  cwd: "/Users/mahiro/ghq/github.com/mahirocoko/agent-halo",
+  cwd: "/Users/mahiro/ghq/github.com/j-kizt/agent-activity",
   model: "gpt-5.6-sol",
   permissionMode: "unrestricted",
   runtime: demoRuntime(scenario),
 });
 
-const createScenario = (scenario: string): AgentHaloEvent[] => {
+const createScenario = (scenario: string): AgentActivityEvent[] => {
   const now = Date.now();
   const timestamp = new Date(now).toISOString();
   const at = (offset: number) => new Date(now + offset).toISOString();
@@ -227,7 +227,7 @@ const createScenario = (scenario: string): AgentHaloEvent[] => {
 
   if (scenario === "multi") {
     const workspace = common.cwd;
-    const other = "/Users/mahiro/ghq/github.com/mahirocoko/paoplew";
+    const other = "/Users/mahiro/ghq/github.com/j-kizt/paoplew";
     const item = (conversationId: string, cwd: string) => ({ ...common, conversationId, cwd, runtime: demoRuntime(conversationId) });
     return [
       {
@@ -422,7 +422,7 @@ const createScenario = (scenario: string): AgentHaloEvent[] => {
   ];
 };
 
-const createDemoEvent = (index: number): AgentHaloEvent => {
+const createDemoEvent = (index: number): AgentActivityEvent => {
   const common = {
     version: 2 as const,
     id: `demo-${index}-${crypto.randomUUID()}`,
@@ -430,7 +430,7 @@ const createDemoEvent = (index: number): AgentHaloEvent => {
     agentId: "agent-demo-mahiro-code",
     agentName: "Mahiro Code",
     conversationId: `local-conv-demo-${(Math.floor(index / 10) % 3) + 1}`,
-    cwd: "/Users/mahiro/ghq/github.com/mahirocoko/agent-halo",
+    cwd: "/Users/mahiro/ghq/github.com/j-kizt/agent-activity",
     model: "gpt-5.5",
     permissionMode: "unrestricted",
     runtime: demoRuntime(`stream-${Math.floor(index / 10) % 3}`),
@@ -522,13 +522,13 @@ const createDemoEvent = (index: number): AgentHaloEvent => {
   }
 };
 
-export const useAgentHaloPresence = ({
+export const useAgentActivityPresence = ({
   demoMode,
   demoScenario,
-}: IAgentHaloPresenceOptions): IAgentHaloPresenceResult => {
-  const [presence, setPresence] = useState<IAgentHaloPresence>(() => createInitialPresence());
-  const [recentEvents, setRecentEvents] = useState<AgentHaloEvent[]>([]);
-  const [lastLiveEvent, setLastLiveEvent] = useState<AgentHaloEvent | null>(null);
+}: IAgentActivityPresenceOptions): IAgentActivityPresenceResult => {
+  const [presence, setPresence] = useState<IAgentActivityPresence>(() => createInitialPresence());
+  const [recentEvents, setRecentEvents] = useState<AgentActivityEvent[]>([]);
+  const [lastLiveEvent, setLastLiveEvent] = useState<AgentActivityEvent | null>(null);
   const [sessionEventRegistry, setSessionEventRegistry] =
     useState<SessionEventRegistry>(readSessionEventRegistry);
   const [capabilities, setCapabilities] = useState(() => createDefaultBridgeCapabilities());
@@ -574,7 +574,7 @@ export const useAgentHaloPresence = ({
   useEffect(() => {
     let disposed = false;
     let source: EventSource | null = null;
-    const store = (events: AgentHaloEvent[]) => {
+    const store = (events: AgentActivityEvent[]) => {
       setSessionEventRegistry((current) => {
         const next = mergeSessionEvents(current, events);
         scheduleRegistryWrite(next);
@@ -616,7 +616,7 @@ export const useAgentHaloPresence = ({
       const response = await fetch(`${BRIDGE_URL}/${path}`);
       if (!response.ok) throw new Error(`${path} HTTP ${response.status}`);
       return response.json() as Promise<{
-        recent?: AgentHaloEvent[];
+        recent?: AgentActivityEvent[];
         capabilities?: unknown;
       }>;
     };
@@ -660,13 +660,13 @@ export const useAgentHaloPresence = ({
       if (!disposed) {
         setConnection({
           status: source?.readyState === EventSource.CLOSED ? "disconnected" : "error",
-          message: "Waiting for Agent Halo bridge",
+          message: "Waiting for Agent Activity bridge",
         });
       }
     };
     const handle = (message: MessageEvent<string>) => {
       try {
-        const event = normalizeSessionEventIdentity(JSON.parse(message.data) as AgentHaloEvent);
+        const event = normalizeSessionEventIdentity(JSON.parse(message.data) as AgentActivityEvent);
         liveEventVersionRef.current += 1;
         setLastLiveEvent(event);
         setPresence((current) => reducePresence(current, event));

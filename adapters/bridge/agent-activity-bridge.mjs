@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Agent Halo Standalone Bridge
+ * Agent Activity Standalone Bridge
  *
  * A self-contained HTTP bridge that can run independently of Letta Code.
  * When running, both the Letta mod and AGY adapter can forward events here
@@ -9,9 +9,9 @@
  * instead of starting its own.
  *
  * Usage:
- *   node agent-halo-bridge.mjs              # start with defaults
- *   node agent-halo-bridge.mjs --port 47621 # explicit port
- *   node agent-halo-bridge.mjs --daemon     # background mode (detach)
+ *   node agent-activity-bridge.mjs              # start with defaults
+ *   node agent-activity-bridge.mjs --port 47621 # explicit port
+ *   node agent-activity-bridge.mjs --daemon     # background mode (detach)
  *
  * Endpoints:
  *   GET  /health    - Bridge status and capabilities
@@ -31,9 +31,9 @@ import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 const PROTOCOL_VERSION = 2;
 const DEFAULT_PORT = 47621;
 const MOD_DIR = join(homedir(), ".config", "agent-activity");
-const CONFIG_PATH = join(MOD_DIR, "agent-halo.config.json");
-const DEFAULT_LOG_FILE = join(MOD_DIR, "agent-halo.events.ndjson");
-const INGEST_TOKEN_PATH = join(MOD_DIR, "agent-halo.ingest-token");
+const CONFIG_PATH = join(MOD_DIR, "agent-activity.config.json");
+const DEFAULT_LOG_FILE = join(MOD_DIR, "agent-activity.events.ndjson");
+const INGEST_TOKEN_PATH = join(MOD_DIR, "agent-activity.ingest-token");
 const BRIDGE_HOST = "127.0.0.1";
 
 // ── Token management ──
@@ -329,7 +329,7 @@ function startBridge(config) {
   const corsHeaders = {
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET, POST, OPTIONS",
-    "access-control-allow-headers": "content-type, accept, x-agent-halo-token",
+    "access-control-allow-headers": "content-type, accept, x-agent-activity-token",
   };
 
   const readJsonBody = (req) =>
@@ -357,7 +357,7 @@ function startBridge(config) {
     if (req.method === "POST" && req.url === "/ingest") {
       const body = await readJsonBody(req);
       if (body && typeof body === "object" && typeof body.type === "string" && typeof body.id === "string") {
-        const runtimeTrusted = matchesIngestToken(config.ingestToken, req.headers["x-agent-halo-token"]);
+        const runtimeTrusted = matchesIngestToken(config.ingestToken, req.headers["x-agent-activity-token"]);
         const payload = runtimeTrusted ? body : { ...body, runtime: null };
         emitLocal(payload);
         res.writeHead(202, { "content-type": "application/json; charset=utf-8", ...corsHeaders });
@@ -387,7 +387,7 @@ function startBridge(config) {
 
     if (req.url === "/health") {
       res.writeHead(200, { "content-type": "application/json; charset=utf-8", ...corsHeaders });
-      res.end(JSON.stringify({ ok: true, name: "agent-halo", version: PROTOCOL_VERSION, mode: "standalone", clients: clients.size, capabilities }));
+      res.end(JSON.stringify({ ok: true, name: "agent-activity", version: PROTOCOL_VERSION, mode: "standalone", clients: clients.size, capabilities }));
       return;
     }
 
@@ -405,7 +405,7 @@ function startBridge(config) {
         "x-accel-buffering": "no",
         ...corsHeaders,
       });
-      res.write(`: agent-halo standalone bridge connected ${new Date().toISOString()}\n\n`);
+      res.write(`: agent-activity standalone bridge connected ${new Date().toISOString()}\n\n`);
       clients.add(res);
       req.on("close", () => clients.delete(res));
       return;
@@ -472,7 +472,7 @@ server.listen(config.port, config.host, () => {
   };
   emitLocal(bridgeReadyEvent);
 
-  console.log(`✓ Agent Halo standalone bridge running on ${config.host}:${config.port}`);
+  console.log(`✓ Agent Activity standalone bridge running on ${config.host}:${config.port}`);
   console.log(`  Log: ${config.logFile}`);
   console.log(`  SSE: http://${config.host}:${config.port}/events`);
   console.log(`  Health: http://${config.host}:${config.port}/health`);

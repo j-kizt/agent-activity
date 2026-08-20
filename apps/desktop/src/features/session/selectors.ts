@@ -1,4 +1,4 @@
-import type { AgentHaloEvent, IAgentHaloPresence } from "@agent-halo/protocol";
+import type { AgentActivityEvent, IAgentActivityPresence } from "@agent-activity/protocol";
 import {
   getEventActivity,
   getEventSessionStatus,
@@ -41,17 +41,17 @@ const isInternalWorkspacePath = (path: string | null | undefined) =>
   );
 
 const getSessionWorkspacePath = (
-  events: AgentHaloEvent[],
+  events: AgentActivityEvent[],
   fallback?: string | null,
 ): string | null =>
   events.find((event) => event.cwd && !isInternalWorkspacePath(event.cwd))?.cwd ??
   (fallback && !isInternalWorkspacePath(fallback) ? fallback : null);
 
-const isInternalOnlySession = (events: AgentHaloEvent[]) =>
+const isInternalOnlySession = (events: AgentActivityEvent[]) =>
   events.length > 0 &&
   events.every((event) => !event.cwd || isInternalWorkspacePath(event.cwd));
 
-const getSessionHerdrTarget = (events: AgentHaloEvent[]) =>
+const getSessionHerdrTarget = (events: AgentActivityEvent[]) =>
   events.find(
     (event) =>
       typeof event.runtime?.herdr?.socketPath === "string" &&
@@ -123,7 +123,7 @@ export const buildWorkspaceSessionGroups = (
 
 export const buildSessionSummaries = (
   registry: SessionEventRegistry,
-  presence: IAgentHaloPresence,
+  presence: IAgentActivityPresence,
   now: Date,
 ): ISessionSummary[] => {
   const sessions = new Map<string, ISessionSummary>();
@@ -152,7 +152,7 @@ export const buildSessionSummaries = (
   if (presence.conversationId && !sessions.has(presence.conversationId)) {
     const eventsForSession = registry[presence.conversationId] ?? [];
     const current = eventsForSession[0]
-      ? ({ ...eventsForSession[0], cwd: presence.cwd } as AgentHaloEvent)
+      ? ({ ...eventsForSession[0], cwd: presence.cwd } as AgentActivityEvent)
       : null;
     const workspacePath = getSessionWorkspacePath(
       current ? [current, ...eventsForSession] : eventsForSession,
@@ -179,7 +179,7 @@ export const buildSessionDetail = (
   conversationId: string | null,
   sessions: ISessionSummary[],
   registry: SessionEventRegistry,
-  presence: IAgentHaloPresence,
+  presence: IAgentActivityPresence,
 ): ISessionDetail | null => {
   if (!conversationId) return null;
   const summary = sessions.find((session) => session.conversationId === conversationId);

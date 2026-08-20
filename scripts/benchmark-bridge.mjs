@@ -38,7 +38,7 @@ if (args.has("child")) {
   const startupMs = performance.now() - startupStartedAt;
   const handler = handlers.get("tool_end");
   const ctx = {
-    cwd: "/tmp/agent-halo-benchmark",
+    cwd: "/tmp/agent-activity-benchmark",
     agent: { id: "benchmark-agent", name: "Benchmark" },
     conversation: { id: "benchmark-conversation" },
     model: "benchmark-model",
@@ -66,10 +66,10 @@ if (args.has("child")) {
   process.exit(0);
 }
 
-const home = await mkdtemp(join(tmpdir(), "agent-halo-benchmark-"));
+const home = await mkdtemp(join(tmpdir(), "agent-activity-benchmark-"));
 const eventCount = Number(args.get("events") ?? 5_000);
 const ref = typeof args.get("ref") === "string" ? String(args.get("ref")) : null;
-let modPath = resolve(repoRoot, String(args.get("mod") ?? "mods/agent-halo.js"));
+let modPath = resolve(repoRoot, String(args.get("mod") ?? "mods/agent-activity.js"));
 const probe = createServer();
 await new Promise((resolveListen) => probe.listen(0, "127.0.0.1", resolveListen));
 const address = probe.address();
@@ -80,18 +80,18 @@ await new Promise((resolveClose) => probe.close(resolveClose));
 try {
   await mkdir(join(home, ".letta", "mods"), { recursive: true });
   if (ref) {
-    const baseline = spawnSync("git", ["show", `${ref}:mods/agent-halo.js`], {
+    const baseline = spawnSync("git", ["show", `${ref}:mods/agent-activity.js`], {
       cwd: repoRoot,
       encoding: "utf8",
       maxBuffer: 10 * 1024 * 1024,
     });
-    if (baseline.status !== 0) throw new Error(baseline.stderr || `unable to read ${ref}:mods/agent-halo.js`);
-    modPath = join(home, "agent-halo-ref.js");
+    if (baseline.status !== 0) throw new Error(baseline.stderr || `unable to read ${ref}:mods/agent-activity.js`);
+    modPath = join(home, "agent-activity-ref.js");
     await writeFile(modPath, baseline.stdout);
   }
-  const logFile = join(home, ".letta", "mods", "agent-halo.events.ndjson");
+  const logFile = join(home, ".letta", "mods", "agent-activity.events.ndjson");
   await writeFile(
-    join(home, ".letta", "mods", "agent-halo.config.json"),
+    join(home, ".letta", "mods", "agent-activity.config.json"),
     JSON.stringify({ host: "127.0.0.1", port, logFile }),
   );
   const child = spawn(process.execPath, [

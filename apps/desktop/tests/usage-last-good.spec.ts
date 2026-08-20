@@ -42,8 +42,8 @@ test("Usage keeps Codex values visible and labels them outdated after a refresh 
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Open Agent Halo" }).click();
-  await expect(page.getByRole("region", { name: "Agent Halo panel" })).toBeVisible();
+  await page.getByRole("button", { name: "Open Agent Activity" }).click();
+  await expect(page.getByRole("region", { name: "Agent Activity panel" })).toBeVisible();
   await page.getByRole("tab", { name: "Usage" }).click();
   await expect(page.getByText("58% left")).toBeVisible();
   await expect(page.getByText("Rate Limit Resets")).toBeVisible();
@@ -90,7 +90,7 @@ test("Usage meters communicate remaining quota with semantic color and copy", as
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Open Agent Halo" }).click();
+  await page.getByRole("button", { name: "Open Agent Activity" }).click();
   await page.getByRole("tab", { name: "Usage" }).click();
 
   const meters = page.locator(".usage-meter");
@@ -167,7 +167,7 @@ test("Usage marks a native cached Status response as outdated instead of online"
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Open Agent Halo" }).click();
+  await page.getByRole("button", { name: "Open Agent Activity" }).click();
   await page.getByRole("tab", { name: "Usage" }).click();
   await page.getByRole("tab", { name: "Claude Code Online" }).click();
   await expect(page.getByText("75% left")).toBeVisible();
@@ -202,7 +202,7 @@ test("Usage does not label a status-only provider response as outdated", async (
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Open Agent Halo" }).click();
+  await page.getByRole("button", { name: "Open Agent Activity" }).click();
   await page.getByRole("tab", { name: "Usage" }).click();
   await page.getByRole("tab", { name: "Claude Code" }).click();
 
@@ -232,7 +232,7 @@ test("Usage keeps a valid empty Antigravity summary online as no quota data", as
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Open Agent Halo" }).click();
+  await page.getByRole("button", { name: "Open Agent Activity" }).click();
   await page.getByRole("tab", { name: "Usage" }).click();
   await page.getByRole("tab", { name: "Antigravity Online" }).click();
 
@@ -242,7 +242,7 @@ test("Usage keeps a valid empty Antigravity summary online as no quota data", as
 
 test("Usage hydrates a persisted last-good snapshot before a reload refresh completes", async ({ page }) => {
   await page.addInitScript(() => {
-    window.localStorage.setItem("agent-halo.usage-snapshots.v1", JSON.stringify({
+    window.localStorage.setItem("agent-activity.usage-snapshots.v1", JSON.stringify({
       codex: {
         providerId: "codex",
         fetchedAt: "2026-07-25T12:00:00Z",
@@ -261,7 +261,7 @@ test("Usage hydrates a persisted last-good snapshot before a reload refresh comp
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Open Agent Halo" }).click();
+  await page.getByRole("button", { name: "Open Agent Activity" }).click();
   await page.getByRole("tab", { name: "Usage" }).click();
 
   await expect(page.getByText("58% left")).toBeVisible();

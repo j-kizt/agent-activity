@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { BarChart3, Check, ChevronLeft, Focus, List, Server, Settings, Timer, Trash2, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createRoot } from "react-dom/client";
-import type { AgentHaloPresenceStatus } from "@agent-halo/protocol";
+import type { AgentActivityPresenceStatus } from "@agent-activity/protocol";
 import { SessionContextSummary, StatusGlyph, WorkspaceSessionGroupItem } from "./features/session/components";
 import {
   formatTime,
@@ -29,7 +29,7 @@ import {
   shouldKeepDisplayAwakeForActivity,
 } from "./features/session/selectors";
 import type { DeletedSessionRegistry, DismissedSessionRegistry, ISessionDetail, ISessionSummary, IWorkspaceSessionGroup } from "./features/session/types";
-import { useAgentHaloPresence } from "./features/presence/useAgentHaloPresence";
+import { useAgentActivityPresence } from "./features/presence/useAgentActivityPresence";
 import { FocusToolsPanel } from "./features/focus/components";
 import { usePomodoro } from "./features/pomodoro/usePomodoro";
 import { useStopwatch } from "./features/stopwatch/useStopwatch";
@@ -42,7 +42,7 @@ import { useAgentUsageList } from "./features/usage/useAgentUsageList";
 import { useRuntimeMonitor } from "./features/runtime/useRuntimeMonitor";
 import "./styles.css";
 
-const KEEP_AWAKE_STORAGE_KEY = "agent-halo.keep-awake-while-working";
+const KEEP_AWAKE_STORAGE_KEY = "agent-activity.keep-awake-while-working";
 const SEARCH_PARAMS = new URLSearchParams(window.location.search);
 const DEMO_MODE = SEARCH_PARAMS.has("demo");
 const DEMO_SCENARIO = SEARCH_PARAMS.get("demoScenario");
@@ -70,7 +70,7 @@ interface IHookStatus {
 type MainPanelTab = "sessions" | "pomodoro" | "usage" | "services";
 
 interface IStatusView {
-  status: AgentHaloPresenceStatus | "stale";
+  status: AgentActivityPresenceStatus | "stale";
   label: string;
   isStale: boolean;
   staleForMs: number;
@@ -95,7 +95,7 @@ const writeKeepAwakeEnabled = (enabled: boolean) => {
 const getGroupRemovalId = (groupKey: string, group: IWorkspaceSessionGroup) => [groupKey, ...group.sessions.map((session) => session.conversationId).sort()].join("\n");
 
 const App = () => {
-  const { capabilities, connection, lastLiveEvent, now, presence, recentEvents, refreshCapabilities, sessionEventRegistry, setSessionEventRegistry, view } = useAgentHaloPresence({ demoMode: DEMO_MODE, demoScenario: DEMO_SCENARIO });
+  const { capabilities, connection, lastLiveEvent, now, presence, recentEvents, refreshCapabilities, sessionEventRegistry, setSessionEventRegistry, view } = useAgentActivityPresence({ demoMode: DEMO_MODE, demoScenario: DEMO_SCENARIO });
   const [usageSettings, setUsageSettings] = useState<IUsageSettings>(readUsageSettings);
   const [displayState, setDisplayState] = useState<IDisplayStateSnapshot | null>(null);
   const [displayLoading, setDisplayLoading] = useState(false);
@@ -237,7 +237,7 @@ const App = () => {
           : activeMainTab === "services"
             ? "Services"
           : sessionGroups.length === 0
-          ? "Agent Halo"
+          ? "Agent Activity"
           : sessionGroups.length === 1
             ? sessionGroups[0].sessions.length === 1 ? "1 session" : `${sessionGroups[0].sessions.length} sessions`
             : `${sessionGroups.length} workspaces`;
@@ -668,7 +668,7 @@ const App = () => {
       applyDisplayState(next);
       setDisplayError(null);
     } catch (error) {
-      setDisplayError(error instanceof Error ? error.message : "Could not move Agent Halo to that display");
+      setDisplayError(error instanceof Error ? error.message : "Could not move Agent Activity to that display");
     } finally {
       displayRequestBusyRef.current = false;
       setDisplayLoading(false);
@@ -753,7 +753,7 @@ const App = () => {
           data-state="open"
           onKeyDown={handleSurfaceKeyDown}
           role="region"
-          aria-label="Agent Halo panel"
+          aria-label="Agent Activity panel"
           data-tauri-drag-region="false"
         >
           <div className="sheet-inner" ref={sheetInnerRef}>
@@ -781,7 +781,7 @@ const App = () => {
                 <span className="spacer" />
                 <span className="bridge-dot" data-connected={isConnected} title={connectionTitle} />
                 <div className="header-tabs">
-                  <div className="header-tablist" role="tablist" aria-label="Agent Halo sections">
+                  <div className="header-tablist" role="tablist" aria-label="Agent Activity sections">
                     <button id="main-tab-sessions" className="header-tab" data-active={activeMainTab === "sessions"} data-panel-focus-target={activeMainTab === "sessions" ? "true" : undefined} type="button" role="tab" aria-label="Sessions" aria-selected={activeMainTab === "sessions"} aria-controls="main-panel-sessions" tabIndex={activeMainTab === "sessions" ? 0 : -1} onKeyDown={(event) => handleMainTabKeyDown(event, "sessions")} onClick={(event) => { event.stopPropagation(); activateMainTab("sessions"); }} data-tauri-drag-region="false" title="Sessions">
                       <List size={13} strokeWidth={2.3} />
                     </button>
@@ -958,7 +958,7 @@ const App = () => {
 
                   <div className="sheet-divider soft" />
 
-                  <div className="event-list" aria-label="Recent Agent Halo events">
+                  <div className="event-list" aria-label="Recent Agent Activity events">
                     {recentEvents.slice(0, 4).map((event) => (
                       <div className="event-row" key={event.id}>
                         <span className="event-time">{formatTime(event.timestamp)}</span>
@@ -1041,7 +1041,7 @@ const App = () => {
 
 declare global {
   interface Window {
-    __AGENT_HALO_HOME__?: string;
+    __AGENT_ACTIVITY_HOME__?: string;
     __TAURI_INTERNALS__?: unknown;
   }
 }

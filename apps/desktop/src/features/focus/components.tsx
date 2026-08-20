@@ -5,7 +5,7 @@ import type { IUsePomodoroResult } from "../pomodoro/usePomodoro";
 import { StopwatchPanel } from "../stopwatch/components";
 import type { IUseStopwatchResult } from "../stopwatch/useStopwatch";
 
-const FOCUS_TOOL_STORAGE_KEY = "agent-halo.focus-tool";
+const FOCUS_TOOL_STORAGE_KEY = "agent-activity.focus-tool";
 type FocusTool = "pomodoro" | "stopwatch";
 
 const FOCUS_TOOLS: readonly FocusTool[] = ["pomodoro", "stopwatch"];

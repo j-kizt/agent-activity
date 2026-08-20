@@ -13,7 +13,7 @@ import type {
   UsageProviderId,
 } from "./types";
 
-const SNAPSHOT_CACHE_KEY = "agent-halo.usage-snapshots.v1";
+const SNAPSHOT_CACHE_KEY = "agent-activity.usage-snapshots.v1";
 
 export {
   formatAbsoluteTime,

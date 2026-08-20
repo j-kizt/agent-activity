@@ -25,7 +25,7 @@ test("keep awake follows any working session instead of ambient attention priori
 
 test("keep awake retries a transient native synchronization failure", async ({ page }) => {
   await page.addInitScript(() => {
-    window.localStorage.setItem("agent-halo.keep-awake-while-working", "true");
+    window.localStorage.setItem("agent-activity.keep-awake-while-working", "true");
     const calls: Array<{ active: boolean }> = [];
     let activeAttempts = 0;
     (window as typeof window & { __keepAwakeCalls: Array<{ active: boolean }> }).__keepAwakeCalls = calls;
@@ -112,7 +112,7 @@ test("setup selects one native display with radio keyboard semantics", async ({ 
         }
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -146,7 +146,7 @@ test("disconnected preferred display falls back without claiming Primary is sele
         if (["display_state", "reconcile_display"].includes(command)) return snapshot;
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };

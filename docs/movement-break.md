@@ -19,7 +19,7 @@ Only a specific **10 Squats** or **10 Overhead Reaches** click may request camer
 - **Offer movement after Focus** is opt-in and defaults Off; manual Movement remains available from Focus.
 - Opening the exercise picker does not request camera access. Camera access is requested only after the user clicks a specific Squat or Overhead Reach challenge.
 - One WebView `getUserMedia` stream feeds both the mirrored preview and bundled MediaPipe Pose Landmarker Lite model locally; preview and detector cannot select different cameras.
-- Agent Halo does not record audio, save frames, encode video, retain a camera history, or send camera data over the network.
+- Agent Activity does not record audio, save frames, encode video, retain a camera history, or send camera data over the network.
 - The preview is rendered directly from the same in-memory stream used for detection. Frames are never drawn into a persistence/export canvas, encoded, written to disk, copied across native IPC, or sent over the network.
 - Camera capture stops on completion, Cancel/Close, Hide, Pet disable, Reset all, app exit, session replacement, permission failure, or native error.
 - Permission denial remains truthful and recoverable: a Focus-completion user may start the prepared break without exercise; a manual user can return to the companion, hide it, or enable Camera access later in macOS System Settings.
@@ -86,7 +86,7 @@ The existing 3-second Pet/notification handoff applies only to Focus completion.
 - A deliberate Pet click may focus Pet controls. The Focus Move tab deliberately launches its manual companion without changing Pomodoro.
 - A deliberate **10 Squats** or **10 Overhead Reaches** click may resize that same Pet window into the exercise surface and request camera access. Opening or closing a chooser cannot.
 - The exercise surface is `600 × 420` logical px so the mirrored 4:3 live view, white tracked line, green exercise target, repetition count, and live progress bar remain readable.
-- Pose updates, permission callbacks, repetition completion, and errors must not reactivate Agent Halo or steal focus.
+- Pose updates, permission callbacks, repetition completion, and errors must not reactivate Agent Activity or steal focus.
 - Closing a Focus-completion surface leaves the prepared break idle; cancelling or completing a manual surface returns to the companion. Hide removes the transparent hitbox.
 
 ## Settings

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { ArrowRight, Check, Coffee, Download, Focus, Monitor as MonitorIcon, PlugZap } from "lucide-react";
-import type { IAgentHaloBridgeCapabilities } from "@agent-halo/protocol";
+import type { IAgentActivityBridgeCapabilities } from "@agent-activity/protocol";
 import { shortenPath } from "../session/activity";
 import { displayResolutionLabel, type IDisplayStateSnapshot } from "./display";
 
@@ -8,7 +8,7 @@ type SetupCategory = "connection" | "display";
 const SETUP_CATEGORIES: SetupCategory[] = ["connection", "display"];
 
 export interface ISetupPanelProps {
-  capabilities: IAgentHaloBridgeCapabilities;
+  capabilities: IAgentActivityBridgeCapabilities;
   canUseNativeControls: boolean;
   connectionTitle: string;
   guidance: { title: string; detail: string };

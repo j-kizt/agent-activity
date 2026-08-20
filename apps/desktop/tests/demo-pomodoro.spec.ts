@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-const storageKey = "agent-halo.pomodoro";
+const storageKey = "agent-activity.pomodoro";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    if (window.sessionStorage.getItem("agent-halo.pomodoro-test-ready") === "true") return;
+    if (window.sessionStorage.getItem("agent-activity.pomodoro-test-ready") === "true") return;
     window.localStorage.clear();
-    window.sessionStorage.setItem("agent-halo.pomodoro-test-ready", "true");
+    window.sessionStorage.setItem("agent-activity.pomodoro-test-ready", "true");
   });
 });
 
@@ -106,7 +106,7 @@ test("Reset all returns to a fresh Focus cycle while preserving timer settings",
   await expect(page.locator(".pomodoro-panel").getByRole("timer")).toHaveText(/40:00/);
   await expect(page.getByText("0 / 3")).toBeVisible();
   await expect.poll(() => page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) ?? "null"), storageKey)).toMatchObject({ phase: "focus", status: "idle", completedFocusSessions: 0, lastCompletion: null });
-  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-halo.pomodoro-settings") ?? "null")?.focusMinutes)).toBe(40);
+  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-activity.pomodoro-settings") ?? "null")?.focusMinutes)).toBe(40);
 });
 
 test("custom durations persist and apply to idle and future phases", async ({ page }) => {
@@ -120,7 +120,7 @@ test("custom durations persist and apply to idle and future phases", async ({ pa
   await page.getByRole("button", { name: "Apply" }).click();
 
   await expect(page.locator(".pomodoro-panel").getByRole("timer")).toHaveText(/40:00/);
-  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-halo.pomodoro-settings") ?? "null"))).toMatchObject({
+  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-activity.pomodoro-settings") ?? "null"))).toMatchObject({
     focusMinutes: 40,
     shortBreakMinutes: 7,
     longBreakMinutes: 20,
@@ -136,10 +136,10 @@ test("custom durations persist and apply to idle and future phases", async ({ pa
 
   await page.getByRole("button", { name: /Timer settings/ }).click();
   await page.getByRole("button", { name: "Defaults" }).click();
-  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-halo.pomodoro-settings") ?? "null")?.focusMinutes)).toBe(40);
+  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-activity.pomodoro-settings") ?? "null")?.focusMinutes)).toBe(40);
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(page.locator(".pomodoro-panel").getByRole("timer")).toHaveText(/5:00/);
-  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-halo.pomodoro-settings") ?? "null")?.focusMinutes)).toBe(25);
+  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-activity.pomodoro-settings") ?? "null")?.focusMinutes)).toBe(25);
 });
 
 test("custom settings do not change a running or paused timer until Restart", async ({ page }) => {
@@ -151,7 +151,7 @@ test("custom settings do not change a running or paused timer until Restart", as
   await page.getByRole("spinbutton", { name: "Focus min" }).fill("50");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(page.locator(".pomodoro-panel").getByRole("timer")).not.toHaveText(/50:00/);
-  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-halo.pomodoro") ?? "null")?.phaseDurationMs)).toBe(25 * 60 * 1_000);
+  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-activity.pomodoro") ?? "null")?.phaseDurationMs)).toBe(25 * 60 * 1_000);
 
   await page.getByRole("button", { name: "Pause" }).click();
   await page.getByRole("button", { name: "Resume" }).click();
@@ -210,7 +210,7 @@ test("completed focus shows a quiet collapsed Done state and prepares the break"
   await expect.poll(() => page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) ?? "null")?.phase, storageKey)).toBe("short-break");
   await page.locator(".halo-surface").focus();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Open Agent Halo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open Agent Activity" })).toBeVisible();
   await expect(page.locator(".pill-detail")).toHaveText("Done");
   await expect(page.locator(".pomodoro-pill-phase")).toHaveText("Short break ready");
   const [leftWingBox, detailBox, rightWingBox, phaseBox] = await Promise.all([
@@ -228,9 +228,9 @@ test("completed focus shows a quiet collapsed Done state and prepares the break"
   const phaseRightInset = rightWingBox!.x + rightWingBox!.width - phaseBox!.x - phaseBox!.width;
   expect(phaseRightInset).toBeGreaterThanOrEqual(24);
   expect(phaseRightInset).toBeLessThanOrEqual(28);
-  await expect(page.getByRole("button", { name: "Open Agent Halo — Short break ready" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open Agent Activity — Short break ready" })).toBeVisible();
   await expect.poll(() => page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) ?? "null")?.completedFocusSessions, storageKey)).toBe(1);
-  await page.getByRole("button", { name: "Open Agent Halo — Short break ready" }).click();
+  await page.getByRole("button", { name: "Open Agent Activity — Short break ready" }).click();
   await page.getByRole("tab", { name: "Focus" }).click();
   await expect(page.locator(".pomodoro-panel").getByRole("button", { name: "Start" })).toBeVisible();
   await expect.poll(() => page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) ?? "null")?.status, storageKey)).toBe("idle");
@@ -262,7 +262,7 @@ test("natural Focus completion summons Pet once and cancels the delayed notifica
         if (command === "take_completion_pet_action") return null;
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -275,7 +275,7 @@ test("natural Focus completion summons Pet once and cancels the delayed notifica
   expect(schedule?.args?.deadlineMs).toBe(endsAt + 5_000);
   const showIndex = calls.findIndex((call) => call.command === "show_completion_pet");
   const handoffCancel = calls.slice(0, showIndex).findLast((call) => call.command === "cancel_pomodoro_notification");
-  expect(handoffCancel?.args).toMatchObject({ requestId: "agent-halo.pomodoro", handoffDeadlineMs: endsAt + 3_000 });
+  expect(handoffCancel?.args).toMatchObject({ requestId: "agent-activity.pomodoro", handoffDeadlineMs: endsAt + 3_000 });
   const summon = calls[showIndex]?.args?.summon as Record<string, unknown>;
   expect(summon).toMatchObject({ schemaVersion: 2, id: "pet-natural-focus", purpose: "focus-completion", pet: "halo-bot", loadout: "3051", movementBreakEnabled: false, nextPhase: "short-break" });
   expect(summon).not.toHaveProperty("preview");
@@ -311,7 +311,7 @@ test("natural Focus completion preserves a pinned manual companion and keeps the
         if (command === "take_completion_pet_action") return null;
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -365,7 +365,7 @@ test("manual Hide dismissal clears the pin so the next natural Focus completion 
         }
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -390,7 +390,7 @@ test("manual Hide dismissal clears the pin so the next natural Focus completion 
 test("disabled Completion Pet keeps the exact-deadline notification path and never summons", async ({ page }) => {
   const endsAt = Date.now() + 350;
   await page.addInitScript(([key, endsAt]) => {
-    window.localStorage.setItem("agent-halo.completion-pet-enabled", "false");
+    window.localStorage.setItem("agent-activity.completion-pet-enabled", "false");
     window.localStorage.setItem(key, JSON.stringify({
       schemaVersion: 2,
       phase: "focus",
@@ -412,7 +412,7 @@ test("disabled Completion Pet keeps the exact-deadline notification path and nev
         if (command === "take_completion_pet_action") return null;
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -451,7 +451,7 @@ test("main renderer consumes one Pet action and remains the sole break timer own
         if (command === "notification_permission_state") return "authorized";
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -489,7 +489,7 @@ test("completed Movement Break is revalidated by the sole main Pomodoro owner", 
         if (command === "notification_permission_state") return "authorized";
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -526,7 +526,7 @@ test("reload inside the delayed fallback window preserves the pending notificati
         if (command === "take_completion_pet_action") return null;
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -567,7 +567,7 @@ test("turning Pet off after the Focus deadline preserves the delayed fallback", 
         if (command === "take_completion_pet_action") return null;
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -621,7 +621,7 @@ test("disabling Pet while native show is pending cannot cancel fallback or resur
         if (command === "take_completion_pet_action") return null;
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -675,7 +675,7 @@ test("Pet handoff that resolves after its safety window hides without cancelling
         if (command === "take_completion_pet_action") return null;
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -720,7 +720,7 @@ test("notification cancellation failure rolls Pet back and preserves fallback st
         if (command === "take_completion_pet_action") return null;
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -758,7 +758,7 @@ test("stale Pet action identity cannot start a different prepared break", async 
         if (command === "notification_permission_state") return "authorized";
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -906,7 +906,7 @@ test("active Pomodoro countdown stays visible over ordinary agent work", async (
   await expect(page.locator(".pill-detail")).toContainText(":");
   await page.locator(".halo-surface").focus();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: /Open Agent Halo — Focus, \d+:\d{2} remaining/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Open Agent Activity — Focus, \d+:\d{2} remaining/ })).toBeVisible();
   expect(await page.locator(".pill-detail").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 });
 
@@ -940,7 +940,7 @@ test("native Start requests permission, schedules silently, and Pause cancels", 
         if (command === "request_notification_permission") return "authorized";
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };
@@ -952,7 +952,7 @@ test("native Start requests permission, schedules silently, and Pause cancels", 
   await expect.poll(() => page.evaluate(() => (window as typeof window & { __pomodoroNativeCalls: Array<{ command: string }> }).__pomodoroNativeCalls.some((call) => call.command === "schedule_pomodoro_notification"))).toBe(true);
 
   const schedule = await page.evaluate(() => (window as typeof window & { __pomodoroNativeCalls: Array<{ command: string; args?: Record<string, unknown> }> }).__pomodoroNativeCalls.find((call) => call.command === "schedule_pomodoro_notification"));
-  expect(schedule?.args).toMatchObject({ requestId: "agent-halo.pomodoro", title: "Focus complete", body: "Short break ready" });
+  expect(schedule?.args).toMatchObject({ requestId: "agent-activity.pomodoro", title: "Focus complete", body: "Short break ready" });
   expect(typeof schedule?.args?.deadlineMs).toBe("number");
 
   await page.getByRole("button", { name: "Pause" }).click();
@@ -985,7 +985,7 @@ test("delayed old scheduling cannot cancel the resumed timer notification", asyn
         }
         if (command === "notch_metrics") return [184, 36];
         if (command === "set_keep_awake") return args?.active === true;
-        if (command === "agent_halo_mod_status") return ["", false];
+        if (command === "agent_activity_mod_status") return ["", false];
         return null;
       },
     };

@@ -1,4 +1,4 @@
-import type { AgentHaloEvent, IAgentHaloHerdrTarget } from "@agent-halo/protocol";
+import type { AgentActivityEvent, IAgentActivityHerdrTarget } from "@agent-activity/protocol";
 
 export type ActivityKind =
   | "session" | "thinking" | "planning" | "tool" | "shell" | "editing"
@@ -21,14 +21,14 @@ export interface ISessionSummary {
   model: string;
   status: "idle" | "working" | "attention" | "inactive" | "done" | "error";
   lastActivityAt: string;
-  herdrTarget: IAgentHaloHerdrTarget | null;
+  herdrTarget: IAgentActivityHerdrTarget | null;
 }
 
 export interface ISessionDetail extends ISessionSummary {
   agentName: string;
   cwd: string;
   permissionMode: string;
-  events: AgentHaloEvent[];
+  events: AgentActivityEvent[];
 }
 
 export interface IWorkspaceSessionGroup {
@@ -44,6 +44,6 @@ export interface IWorkspaceSessionGroup {
   sessions: ISessionSummary[];
 }
 
-export type SessionEventRegistry = Record<string, AgentHaloEvent[]>;
+export type SessionEventRegistry = Record<string, AgentActivityEvent[]>;
 export type DismissedSessionRegistry = Record<string, number>;
 export type DeletedSessionRegistry = Record<string, number>;

@@ -1,6 +1,6 @@
 # Pet and loadout production
 
-This document describes how Agent Halo should add a future Pet identity or Halo Bot loadout without losing source provenance, motion quality, runtime truth, or release reproducibility.
+This document describes how Agent Activity should add a future Pet identity or Halo Bot loadout without losing source provenance, motion quality, runtime truth, or release reproducibility.
 
 ## Choose the correct lane
 
@@ -8,7 +8,7 @@ Use a **new Pet identity** when the character has its own silhouette, authored m
 
 Use a **Halo Bot loadout** when the result remains the same Halo Bot identity and motion rig, but selects a different compatible face/head/body/top composition. A loadout is not a separate Pet and must not change automatically with Letta activity.
 
-Do not use a new identity merely to expose palette variants, project hashing, or activity-specific costumes. Agent Halo keeps one global user-selected Pet, one separately selected Halo Bot loadout, and one presentation-only state-to-motion map.
+Do not use a new identity merely to expose palette variants, project hashing, or activity-specific costumes. Agent Activity keeps one global user-selected Pet, one separately selected Halo Bot loadout, and one presentation-only state-to-motion map.
 
 ## Shared runtime contract
 
@@ -133,7 +133,7 @@ Do not promote motion from hashes alone. Human review must cover readability, id
 Promotion must not depend on ignored `.agent-state` files. Track a package shaped like:
 
 ```text
-apps/desktop/assets/mascots/agent-halo-roster/source/<pet>-motion-vN/
+apps/desktop/assets/mascots/agent-activity-roster/source/<pet>-motion-vN/
   provider/ or licensed-source/
   canonical/
   layers/
@@ -148,7 +148,7 @@ apps/desktop/assets/mascots/agent-halo-roster/source/<pet>-motion-vN/
 Runtime files belong under:
 
 ```text
-apps/desktop/public/mascots/agent-halo-roster/body/<pet>/
+apps/desktop/public/mascots/agent-activity-roster/body/<pet>/
   ambient/{idle,working,attention,done,error}.png
   session/{idle,working,attention,done,error}.png
   completion/{idle,working,attention,done,error}.png
@@ -177,13 +177,13 @@ Update these active contracts together:
 ```text
 apps/desktop/src/features/session/haloBot.ts
 apps/desktop/src-tauri/src/pet_window.rs
-apps/desktop/public/mascots/agent-halo-roster/manifest.json
-apps/desktop/assets/mascots/agent-halo-roster/source/pixabots-loadout-motion-v1/
+apps/desktop/public/mascots/agent-activity-roster/manifest.json
+apps/desktop/assets/mascots/agent-activity-roster/source/pixabots-loadout-motion-v1/
 apps/desktop/tests/demo-pet.spec.ts
 apps/desktop/tests/demo-completion-pet.spec.ts
 ```
 
-Do not create a new Pet ID for each combination, pre-generate one state-strip family per combination, reorder the append-only source catalog, or swap combinations from semantic state or `agent-halo.pet-motion-map`.
+Do not create a new Pet ID for each combination, pre-generate one state-strip family per combination, reorder the append-only source catalog, or swap combinations from semantic state or `agent-activity.pet-motion-map`.
 
 ## Runtime integration checklist
 

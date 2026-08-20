@@ -155,7 +155,7 @@ test("passive dimension updates cannot duplicate a delayed focus request", async
 test("Pomodoro completion only expands the closed wing without requesting focus", async ({ page }) => {
   await page.addInitScript(() => {
     const now = Date.now();
-    window.localStorage.setItem("agent-halo.pomodoro", JSON.stringify({
+    window.localStorage.setItem("agent-activity.pomodoro", JSON.stringify({
       schemaVersion: 2,
       phase: "focus",
       status: "running",
@@ -183,7 +183,7 @@ test("Pomodoro completion only expands the closed wing without requesting focus"
   });
 
   await page.goto("/?demo=1&demoCollapsed=1&demoScenario=idle");
-  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-halo.pomodoro") ?? "null")?.phase)).toBe("short-break");
+  await expect.poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("agent-activity.pomodoro") ?? "null")?.phase)).toBe("short-break");
   const surface = page.locator(".halo-surface");
   await expect(surface).toHaveAttribute("data-state", "closed");
   await expect(surface).toHaveAttribute("aria-expanded", "false");

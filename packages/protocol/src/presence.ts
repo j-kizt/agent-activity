@@ -1,6 +1,6 @@
-import type { AgentHaloEvent } from "./index.js";
+import type { AgentActivityEvent } from "./index.js";
 
-export type AgentHaloPresenceStatus =
+export type AgentActivityPresenceStatus =
   | "offline"
   | "idle"
   | "thinking"
@@ -9,8 +9,8 @@ export type AgentHaloPresenceStatus =
   | "closed"
   | "error";
 
-export interface IAgentHaloPresence {
-  status: AgentHaloPresenceStatus;
+export interface IAgentActivityPresence {
+  status: AgentActivityPresenceStatus;
   agentId: string | null;
   agentName: string | null;
   conversationId: string | null;
@@ -18,20 +18,20 @@ export interface IAgentHaloPresence {
   model: string | null;
   permissionMode: string | null;
   activeToolName: string | null;
-  lastEventType: AgentHaloEvent["type"] | null;
+  lastEventType: AgentActivityEvent["type"] | null;
   lastEventAt: string | null;
   messageCount: number | null;
   toolCallCount: number | null;
 }
 
-export interface IAgentHaloPresenceView {
-  status: AgentHaloPresenceStatus | "stale";
+export interface IAgentActivityPresenceView {
+  status: AgentActivityPresenceStatus | "stale";
   label: string;
   isStale: boolean;
   staleForMs: number;
 }
 
-export const createInitialPresence = (): IAgentHaloPresence => ({
+export const createInitialPresence = (): IAgentActivityPresence => ({
   status: "offline",
   agentId: null,
   agentName: null,
@@ -47,9 +47,9 @@ export const createInitialPresence = (): IAgentHaloPresence => ({
 });
 
 export const reducePresence = (
-  current: IAgentHaloPresence,
-  event: AgentHaloEvent,
-): IAgentHaloPresence => {
+  current: IAgentActivityPresence,
+  event: AgentActivityEvent,
+): IAgentActivityPresence => {
   const scoped = {
     agentId: event.agentId ?? current.agentId,
     agentName: event.agentName ?? current.agentName,
@@ -59,7 +59,7 @@ export const reducePresence = (
     permissionMode: event.permissionMode ?? current.permissionMode,
     lastEventType: event.type,
     lastEventAt: event.timestamp,
-  } satisfies Partial<IAgentHaloPresence>;
+  } satisfies Partial<IAgentActivityPresence>;
 
   switch (event.type) {
     case "bridge_ready":
@@ -159,9 +159,9 @@ export const reducePresence = (
 };
 
 export const getPresenceView = (
-  presence: IAgentHaloPresence,
+  presence: IAgentActivityPresence,
   options: { now?: Date; staleAfterMs?: number } = {},
-): IAgentHaloPresenceView => {
+): IAgentActivityPresenceView => {
   const now = options.now ?? new Date();
   const staleAfterMs = options.staleAfterMs ?? 30_000;
   const lastEventMs = presence.lastEventAt ? Date.parse(presence.lastEventAt) : Number.NaN;

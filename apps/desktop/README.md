@@ -1,6 +1,6 @@
-# Agent Halo Desktop
+# Agent Activity Desktop
 
-The active Agent Halo desktop renderer is a Tauri v2 transparent macOS notch surface backed by the local bridge at `127.0.0.1:47621`.
+The active Agent Activity desktop renderer is a Tauri v2 transparent macOS notch surface backed by the local bridge at `127.0.0.1:47621`.
 
 Runtime flow:
 

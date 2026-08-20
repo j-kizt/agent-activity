@@ -1,11 +1,11 @@
-# Agent Halo Presence Model
+# Agent Activity Presence Model
 
 The bridge emits raw Letta-native events. The presence model converts those events into a small UI-facing state so desktop and terminal viewers do not each invent their own rules.
 
 ## State shape
 
 ```ts
-type AgentHaloPresenceStatus =
+type AgentActivityPresenceStatus =
   | "offline"
   | "idle"
   | "thinking"
@@ -37,7 +37,7 @@ The current reducer lives in `packages/protocol/src/presence.ts`.
 
 ## Completion and stale fallback
 
-Letta Code mods now expose `tool_end`, `compact_start` / `compact_end`, and local-backend `llm_start` / `llm_end`; Letta Code 0.27.20 also emits `llm_end` for provider errors with nullable usage and an error summary. Agent Halo still keeps Mahiro's local Letta `Stop` hook via `POST /hook/stop` as a reliable turn-finished fallback because not every backend/surface emits every event. Viewers should still treat long-running `thinking` / `tool-running` states as potentially stale after a local timeout when terminal events are unavailable.
+Letta Code mods now expose `tool_end`, `compact_start` / `compact_end`, and local-backend `llm_start` / `llm_end`; Letta Code 0.27.20 also emits `llm_end` for provider errors with nullable usage and an error summary. Agent Activity still keeps Mahiro's local Letta `Stop` hook via `POST /hook/stop` as a reliable turn-finished fallback because not every backend/surface emits every event. Viewers should still treat long-running `thinking` / `tool-running` states as potentially stale after a local timeout when terminal events are unavailable.
 
 The terminal viewer defaults to `staleAfterMs = 30000`. The desktop uses event-aware missing-terminal fallbacks instead of one universal 30-second timeout: in-flight model work may remain active for up to 10 minutes, tool work for up to 30 minutes, compaction for up to 10 minutes, and transitional events for up to 2 minutes. A paired terminal event still resolves immediately. Once a fallback expires, the desktop maps the quiet event to `inactive`, not `waiting`: only `attention_requested` means the agent actually needs user input. Inactive sessions remain in history but have lower priority than done/idle sessions and do not occupy the notch activity wing.
 
@@ -45,7 +45,7 @@ Legacy persisted or snapshot events whose conversation id is `default` are migra
 
 ## Derived activity semantics
 
-The desktop UI derives a smaller “activity kind” from raw bridge events for recent-activity rows. The Pet system keeps two independent layers: one user-selected global body projects five broad affect states (`idle`, `working`, `attention`, `done`, `error`), while one shared detached pixel signal maps grouped activity/status truth. Only Halo Bot and Haloform are selectable; Halo Bot remains the fresh/default identity and keeps one separately persisted selection from the complete pinned 10,752-combination Pixabots catalog. Workspace/project hashing and Pet color randomization are disabled. A validated `agent-halo.pet-motion-map` may redirect each semantic state to another body motion, but the true state, status priority, accessibility copy, Keep display awake calculation, and detached Signal V4 remain unchanged. Idle/inactive and bridge/session lifecycle show no signal. This is intentionally a UI derivation, not a new bridge protocol field, and it never invents task content.
+The desktop UI derives a smaller “activity kind” from raw bridge events for recent-activity rows. The Pet system keeps two independent layers: one user-selected global body projects five broad affect states (`idle`, `working`, `attention`, `done`, `error`), while one shared detached pixel signal maps grouped activity/status truth. Only Halo Bot and Haloform are selectable; Halo Bot remains the fresh/default identity and keeps one separately persisted selection from the complete pinned 10,752-combination Pixabots catalog. Workspace/project hashing and Pet color randomization are disabled. A validated `agent-activity.pet-motion-map` may redirect each semantic state to another body motion, but the true state, status priority, accessibility copy, Keep display awake calculation, and detached Signal V4 remain unchanged. Idle/inactive and bridge/session lifecycle show no signal. This is intentionally a UI derivation, not a new bridge protocol field, and it never invents task content.
 
 Current raw events:
 

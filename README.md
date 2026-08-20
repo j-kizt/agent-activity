@@ -1,7 +1,7 @@
-# Agent Halo
+# Agent Activity
 
 <p align="center">
-  <img src="apps/desktop/assets/agent-halo-app-icon.png" alt="Agent Halo app icon" width="128" height="128" />
+  <img src="apps/desktop/assets/agent-activity-app-icon.png" alt="Agent Activity app icon" width="128" height="128" />
 </p>
 
 <p align="center">
@@ -16,9 +16,9 @@
 
 ## Overview
 
-Agent Halo is a native desktop companion for AI coding agents, currently supporting [Letta Code](https://docs.letta.com/letta-code/index.md) and [AGY (Antigravity)](https://antigravity.google). It runs around the macOS camera notch, listens to trusted agent events, and turns agent activity into a compact live presence surface.
+Agent Activity is a native desktop companion for AI coding agents, currently supporting [Letta Code](https://docs.letta.com/letta-code/index.md) and [AGY (Antigravity)](https://antigravity.google). It runs around the macOS camera notch, listens to trusted agent events, and turns agent activity into a compact live presence surface.
 
-It is designed for people who keep multiple AI coding sessions, subagents, and project terminals open at once. Instead of scraping terminal text or asking you to hunt through panes, Agent Halo keeps recent workspaces visible, shows what each conversation is doing, and adds local focus tools without trying to become a hosted dashboard or process manager.
+It is designed for people who keep multiple AI coding sessions, subagents, and project terminals open at once. Instead of scraping terminal text or asking you to hunt through panes, Agent Activity keeps recent workspaces visible, shows what each conversation is doing, and adds local focus tools without trying to become a hosted dashboard or process manager.
 
 The current app now spans session presence, a floating Pet with Focus-completion, manual-companion, and setup-preview purposes, Focus tools, an optional camera-based Movement Break, local provider usage, read-only process pressure, local service inspection and guarded current-user service controls, native display placement, and setup/install controls.
 
@@ -35,7 +35,7 @@ The current app now spans session presence, a floating Pet with Focus-completion
 | **Services** | Local TCP/HTTP listeners grouped into Detected web frontends, Letta services, and Other listeners, with expandable process detail, browser-open actions, and guarded Stop → Force kill controls for eligible current-user listener processes |
 | **Setup** | Connection/mod install, global Pet choice and size, Completion Pet and **Offer movement after Focus** settings, keep-awake, and target-display selection |
 
-## What Agent Halo does
+## What Agent Activity does
 
 - Projects live Letta Code lifecycle, turn, model, tool, compaction, completion, and needs-input activity into a compact notch surface.
 - Keeps recent conversations in workspace groups, including distinct subagent/default lanes, sticky completed rows, per-session context, and guarded clear/dismiss behavior.
@@ -48,20 +48,20 @@ The current app now spans session presence, a floating Pet with Focus-completion
 - Remembers the selected display for the notch and Pet, with safe Primary fallback when that display disconnects.
 - Installs, verifies, and diagnoses the local Letta Code mod without rewriting global Letta settings.
 
-Agent Halo intentionally stays local. It uses the public Letta Code mod surface and AGY hooks API, a local bridge, local credentials, and local logs. The desktop app supervises a bundled standalone bridge whenever no existing Agent Halo bridge is reachable, so AGY presence does not require Letta Code to be open. It does not depend on a hosted dashboard and does not use transcript parsing as its primary source of truth.
+Agent Activity intentionally stays local. It uses the public Letta Code mod surface and AGY hooks API, a local bridge, local credentials, and local logs. The desktop app supervises a bundled standalone bridge whenever no existing Agent Activity bridge is reachable, so AGY presence does not require Letta Code to be open. It does not depend on a hosted dashboard and does not use transcript parsing as its primary source of truth.
 
 ## Current status
 
-Agent Halo is an actively used personal macOS app, not a public packaged release. The bridge, native overlay, multi-session model, Completion Pet, Focus/Movement flow, Usage, Runtime, Services, display placement, keep-awake, and setup/install paths are implemented and covered by browser/native regression checks. The local-service lane additionally has parser/native compile coverage, browser demo coverage, and live macOS evidence that structured `lsof` sees Bun/Python listeners while bounded HTTP evidence distinguishes a Bun browser app from Python directory listings and AirTunes. Known local projects may opt into the bounded explicit registry documented in `docs/runtime-monitor.md`. The installed app remains the final visual/product check for the real machine state.
+Agent Activity is an actively used personal macOS app, not a public packaged release. The bridge, native overlay, multi-session model, Completion Pet, Focus/Movement flow, Usage, Runtime, Services, display placement, keep-awake, and setup/install paths are implemented and covered by browser/native regression checks. The local-service lane additionally has parser/native compile coverage, browser demo coverage, and live macOS evidence that structured `lsof` sees Bun/Python listeners while bounded HTTP evidence distinguishes a Bun browser app from Python directory listings and AirTunes. Known local projects may opt into the bounded explicit registry documented in `docs/runtime-monitor.md`. The installed app remains the final visual/product check for the real machine state.
 
-The project still moves quickly. Session controls remain intentionally conservative: Agent Halo does not invent an “end session” capability before Letta exposes a stable scoped API. Services process control is a separate desktop-native boundary limited to exact current-user listener identities; it does not terminate a Letta conversation or enable bridge `sessionActions.endSession`.
+The project still moves quickly. Session controls remain intentionally conservative: Agent Activity does not invent an “end session” capability before Letta exposes a stable scoped API. Services process control is a separate desktop-native boundary limited to exact current-user listener identities; it does not terminate a Letta conversation or enable bridge `sessionActions.endSession`.
 
 ## Architecture
 
 ```text
 Letta Code public mod events / AGY lifecycle hooks
-  -> ~/.letta/mods/agent-halo.js (Letta)
-  -> adapters/agy/agent-halo-agy-hook.mjs (AGY)
+  -> ~/.letta/mods/agent-activity.js (Letta)
+  -> adapters/agy/agent-activity-agy-hook.mjs (AGY)
   -> local bridge on 127.0.0.1:47621
   -> SSE / snapshot / NDJSON log
   -> Tauri desktop notch overlay + terminal viewer
@@ -101,10 +101,10 @@ The bridge exposes local-only endpoints:
 The bridge also writes a local NDJSON event log:
 
 ```text
-~/.letta/mods/agent-halo.events.ndjson
+~/.letta/mods/agent-activity.events.ndjson
 ```
 
-Bridge ownership is fail-closed and local: every bridge owner and relay normalizes to the canonical IPv4 loopback host `127.0.0.1`. The desktop reuses a healthy Agent Halo bridge when Letta or another standalone owner already serves the configured port. It starts its bundled fallback only after a refused loopback connection, treats timeout or ambiguous failures as occupied, never replaces an unrelated listener, and stops the child it owns when the app exits.
+Bridge ownership is fail-closed and local: every bridge owner and relay normalizes to the canonical IPv4 loopback host `127.0.0.1`. The desktop reuses a healthy Agent Activity bridge when Letta or another standalone owner already serves the configured port. It starts its bundled fallback only after a refused loopback connection, treats timeout or ambiguous failures as occupied, never replaces an unrelated listener, and stops the child it owns when the app exits.
 
 See:
 
@@ -121,7 +121,7 @@ See:
 
 ## Event coverage
 
-Agent Halo currently consumes these Letta Code mod events when available:
+Agent Activity currently consumes these Letta Code mod events when available:
 
 - `conversation_open`
 - `conversation_close`
@@ -137,11 +137,11 @@ Agent Halo currently consumes these Letta Code mod events when available:
 
 The bridge keeps payloads intentionally small and privacy-aware. Tool results are represented by status and output length, not raw output. LLM activity stores model, stop reason, duration, and token counts. User text previews are disabled by default unless explicitly configured locally.
 
-Lower-level Letta Code app-server/device protocol events such as queue, approval result, and process-control messages are not consumed. Agent Halo uses the supported local `PermissionRequest` hook only to signal that user attention is required; it does not inspect transcript text or claim access to the full internal approval queue.
+Lower-level Letta Code app-server/device protocol events such as queue, approval result, and process-control messages are not consumed. Agent Activity uses the supported local `PermissionRequest` hook only to signal that user attention is required; it does not inspect transcript text or claim access to the full internal approval queue.
 
 ## Usage providers
 
-The Usage tab keeps every known provider discoverable. Providers Agent Halo can read locally show current metrics; unavailable/offline providers remain visible with the concrete local cause instead of disappearing.
+The Usage tab keeps every known provider discoverable. Providers Agent Activity can read locally show current metrics; unavailable/offline providers remain visible with the concrete local cause instead of disappearing.
 
 Currently supported local providers:
 
@@ -152,22 +152,22 @@ Currently supported local providers:
 
 Notes:
 
-- Codex history and token trends come from local usage history for the resolved local home where available; it is never labelled as a separately selected account until Agent Halo has account-card UI.
+- Codex history and token trends come from local usage history for the resolved local home where available; it is never labelled as a separately selected account until Agent Activity has account-card UI.
 - Codex condenses available local history into Today/Yesterday, a 30-day trend, a short model mix, and an optional daily detail disclosure. The surface labels that data as an estimate from this home.
 - Antigravity usage first reads the local Antigravity/`agy` language server, then falls back to Cloud Code with the existing `gemini`/`antigravity` Keychain credential when the language server is unavailable or not signed in.
-- If an Antigravity refresh token must be refreshed, Agent Halo reads locally supplied OAuth client metadata from `AGENT_HALO_AGY_GOOGLE_CLIENT_ID`/`AGENT_HALO_AGY_GOOGLE_CLIENT_SECRET` or the local ignored file `~/.config/agent-halo/agy-google-oauth.json`; these values must never be committed.
+- If an Antigravity refresh token must be refreshed, Agent Activity reads locally supplied OAuth client metadata from `AGENT_ACTIVITY_AGY_GOOGLE_CLIENT_ID`/`AGENT_ACTIVITY_AGY_GOOGLE_CLIENT_SECRET` or the local ignored file `~/.config/agent-activity/agy-google-oauth.json`; these values must never be committed.
 - Claude Code tries valid local Keychain/file logins before an inference-only environment token and refreshes only back into the source that produced the credential.
 - Provider cards remain capability-aware; a failed refresh preserves last-good metrics with an explicit Outdated/error state instead of silently disappearing.
 
 ### Antigravity OAuth refresh setup (local only)
 
-The existing `gemini`/`antigravity` Keychain access token is enough for normal Cloud Code reads. This extra setup is needed only when Agent Halo must exchange an Antigravity `refresh_token` for a new access token. The OAuth client ID and secret are installed-app client metadata, but GitHub Push Protection still treats the values as credentials; never place them in tracked source, a committed `.env`, logs, prompts, screenshots, or chat messages.
+The existing `gemini`/`antigravity` Keychain access token is enough for normal Cloud Code reads. This extra setup is needed only when Agent Activity must exchange an Antigravity `refresh_token` for a new access token. The OAuth client ID and secret are installed-app client metadata, but GitHub Push Protection still treats the values as credentials; never place them in tracked source, a committed `.env`, logs, prompts, screenshots, or chat messages.
 
 An AI or operator working on the user's Mac may create the ignored local config when both values are already available from an authorized local environment or provider installation. The setup must not print the values:
 
 ```bash
-test -n "${AGENT_HALO_AGY_GOOGLE_CLIENT_ID:-}" \
-  && test -n "${AGENT_HALO_AGY_GOOGLE_CLIENT_SECRET:-}" \
+test -n "${AGENT_ACTIVITY_AGY_GOOGLE_CLIENT_ID:-}" \
+  && test -n "${AGENT_ACTIVITY_AGY_GOOGLE_CLIENT_SECRET:-}" \
   || { echo "Set the two AGY OAuth variables from an authorized local source first." >&2; exit 1; }
 
 umask 077
@@ -176,11 +176,11 @@ import json
 import os
 from pathlib import Path
 
-path = Path.home() / ".config" / "agent-halo" / "agy-google-oauth.json"
+path = Path.home() / ".config" / "agent-activity" / "agy-google-oauth.json"
 path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
 path.write_text(json.dumps({
-    "client_id": os.environ["AGENT_HALO_AGY_GOOGLE_CLIENT_ID"],
-    "client_secret": os.environ["AGENT_HALO_AGY_GOOGLE_CLIENT_SECRET"],
+    "client_id": os.environ["AGENT_ACTIVITY_AGY_GOOGLE_CLIENT_ID"],
+    "client_secret": os.environ["AGENT_ACTIVITY_AGY_GOOGLE_CLIENT_SECRET"],
 }) + "\n")
 path.chmod(0o600)
 print(path)
@@ -207,10 +207,10 @@ pnpm desktop:install
 open /Applications/Agent\ Halo.app
 ```
 
-In Agent Halo, open **Setup** and choose **Install/Reinstall** to install the local Letta mod:
+In Agent Activity, open **Setup** and choose **Install/Reinstall** to install the local Letta mod:
 
 ```text
-~/.letta/mods/agent-halo.js
+~/.letta/mods/agent-activity.js
 ```
 
 Then reload Letta Code:
@@ -227,7 +227,7 @@ You can also install the mod directly from the repository:
 pnpm mod:install
 ```
 
-The installer also copies a local hook relay to `~/.letta/hooks/agent-halo-hook.mjs`. It deliberately does **not** rewrite global `~/.letta/settings.json`, so existing voice/safety hooks and concurrent Letta settings writes remain untouched. `AskUserQuestion` is observed directly when its tool lifecycle is available; runtimes that render it outside the local tool manager can connect an existing `Notification` voice hook to the relay. Completion-adjacent notifications are suppressed so ordinary finished turns do not become false needs-input activity. Generic `PermissionRequest` attention remains optional and requires explicitly registering the relay after active Letta sessions are closed.
+The installer also copies a local hook relay to `~/.letta/hooks/agent-activity-hook.mjs`. It deliberately does **not** rewrite global `~/.letta/settings.json`, so existing voice/safety hooks and concurrent Letta settings writes remain untouched. `AskUserQuestion` is observed directly when its tool lifecycle is available; runtimes that render it outside the local tool manager can connect an existing `Notification` voice hook to the relay. Completion-adjacent notifications are suppressed so ordinary finished turns do not become false needs-input activity. Generic `PermissionRequest` attention remains optional and requires explicitly registering the relay after active Letta sessions are closed.
 
 ## Development
 
@@ -239,7 +239,7 @@ pnpm test:demo          # Browser demo Playwright suite
 pnpm test:hooks         # Local hook/mod integration checks
 pnpm test:performance   # Bundle + model/bridge performance budgets
 pnpm desktop:dev        # Run the Tauri desktop app in dev mode
-pnpm desktop:install    # Build and install /Applications/Agent Halo.app
+pnpm desktop:install    # Build and install /Applications/Agent Activity.app
 pnpm desktop:web        # Browser-only demo/dev server
 pnpm viewer             # Terminal SSE viewer
 pnpm mod:tail           # Tail the local NDJSON event log
@@ -263,7 +263,7 @@ The browser demo is useful for layout and interaction checks. Native behavior �
 ## Project layout
 
 ```text
-mods/agent-halo.js              Letta Code mod and local bridge
+mods/agent-activity.js              Letta Code mod and local bridge
 packages/protocol/              Shared event and presence model
 apps/desktop/                   Tauri desktop notch overlay
 apps/desktop/src/features/      Session, Pet, Pomodoro, Stopwatch, Movement, Usage, Runtime, and Setup owners
@@ -276,7 +276,7 @@ scripts/install-desktop.mjs     Desktop build/install helper
 
 ## Design direction
 
-Agent Halo should feel like a quiet companion, not a generic AI dashboard. The interface follows a dark hardware-notch direction with compact workspace rows, hairline dividers, restrained orange/green state accents, and small Pet activity. Setup exposes only Halo Bot and Haloform as one global persisted Pet choice. Halo Bot is the fresh default and exposes all 10,752 combinations from the pinned 43-part Pixabots catalog through four layered selectors; Haloform uses an approved provider-derived native96 CRT master with explicit semantic masks. Retired stored Pet IDs normalize to Halo Bot, and neither identity nor color is randomized per project. A separate persisted Letta-state motion map may redirect body presentation (for example, Working → Idle motion) without changing truthful status, Signal V4, or Keep display awake semantics.
+Agent Activity should feel like a quiet companion, not a generic AI dashboard. The interface follows a dark hardware-notch direction with compact workspace rows, hairline dividers, restrained orange/green state accents, and small Pet activity. Setup exposes only Halo Bot and Haloform as one global persisted Pet choice. Halo Bot is the fresh default and exposes all 10,752 combinations from the pinned 43-part Pixabots catalog through four layered selectors; Haloform uses an approved provider-derived native96 CRT master with explicit semantic masks. Retired stored Pet IDs normalize to Halo Bot, and neither identity nor color is randomized per project. A separate persisted Letta-state motion map may redirect body presentation (for example, Working → Idle motion) without changing truthful status, Signal V4, or Keep display awake semantics.
 
 Natural Focus completion can summon a separate floating Pet without opening or focusing the full notch panel. The Pet owns projection only; the main renderer remains the sole Pomodoro and notification owner. That Focus-completion purpose retains Start break/Later/Close and its notification handoff, with an optional **Offer movement after Focus** chooser. Independently, Focus Move can show a manual companion or launch a specific Squat/Reach exercise; it mirrors main-projected state and Signal V4, returns after manual movement, and never mutates Pomodoro. Every camera path starts only after the exact exercise click, using the shared compact black/green camera surface with exercise-specific white/green tracking guides. Setup preview is dismiss-only. See [`docs/pet.md`](docs/pet.md) and [`docs/movement-break.md`](docs/movement-break.md).
 
@@ -285,21 +285,21 @@ Design references and parity notes live in [`docs/notchcode-parity.md`](docs/not
 Runtime Pet strips remain in the legacy asset path:
 
 ```text
-apps/desktop/public/mascots/agent-halo-roster/
+apps/desktop/public/mascots/agent-activity-roster/
 ```
 
 Selected source masters, palette provenance, and QA evidence live in:
 
 ```text
-apps/desktop/assets/mascots/agent-halo-roster/
+apps/desktop/assets/mascots/agent-activity-roster/
 ```
 
 ## Privacy and local data
 
-Agent Halo is built around local state:
+Agent Activity is built around local state:
 
 - Bridge traffic stays on `127.0.0.1`.
-- Events are written to `~/.letta/mods/agent-halo.events.ndjson`.
+- Events are written to `~/.letta/mods/agent-activity.events.ndjson`.
 - Cleared completion tombstones and removed local session history are stored in desktop renderer local storage.
 - Provider usage reads local credentials, CLIs, language servers, or local history where available.
 - The bridge does not store raw tool output by default.
@@ -320,6 +320,6 @@ Agent Halo is built around local state:
 
 Notch geometry and sheet anatomy are inspired by [Notchcode](https://github.com/billxby/notchcode) by Bill Xu, including its documented [DynamicNotchKit](https://github.com/MrKai77/DynamicNotchKit) lineage by Kai Azim. Both projects are MIT-licensed; see their upstream repositories for full license text.
 
-The local usage-provider research and quota-reading approach is informed by [OpenUsage](https://github.com/robinebers/openusage) by Robin Ebers. Agent Halo implements its own local desktop integration, but OpenUsage was a useful reference for understanding provider credential locations and usage/quota surfaces.
+The local usage-provider research and quota-reading approach is informed by [OpenUsage](https://github.com/robinebers/openusage) by Robin Ebers. Agent Activity implements its own local desktop integration, but OpenUsage was a useful reference for understanding provider credential locations and usage/quota surfaces.
 
-The white-line/green-target Movement Break interaction was inspired by [DeskSquat](https://desksquat.app/). Agent Halo reimplements the idea inside its own projection-only Pet and main-renderer Pomodoro ownership model with one explicit local stream, bundled offline inference, and no camera recording or upload.
+The white-line/green-target Movement Break interaction was inspired by [DeskSquat](https://desksquat.app/). Agent Activity reimplements the idea inside its own projection-only Pet and main-renderer Pomodoro ownership model with one explicit local stream, bundled offline inference, and no camera recording or upload.

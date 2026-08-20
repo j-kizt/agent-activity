@@ -9,7 +9,7 @@ import test from "node:test";
 const repoRoot = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 
 test("mod installer copies the relay idempotently without changing global settings", async () => {
-  const home = await mkdtemp(join(tmpdir(), "agent-halo-install-"));
+  const home = await mkdtemp(join(tmpdir(), "agent-activity-install-"));
   const settingsPath = join(home, ".letta", "settings.json");
   await mkdir(join(home, ".letta"), { recursive: true });
   const original = {
@@ -35,15 +35,15 @@ test("mod installer copies the relay idempotently without changing global settin
     const installed = JSON.parse(await readFile(settingsPath, "utf8"));
     assert.deepEqual(installed, original);
     assert.equal((await stat(settingsPath)).mode & 0o777, 0o640);
-    assert.match(await readFile(join(home, ".letta", "mods", "agent-halo.js"), "utf8"), /attention_requested/);
-    assert.match(await readFile(join(home, ".letta", "hooks", "agent-halo-hook.mjs"), "utf8"), /PermissionRequest/);
+    assert.match(await readFile(join(home, ".letta", "mods", "agent-activity.js"), "utf8"), /attention_requested/);
+    assert.match(await readFile(join(home, ".letta", "hooks", "agent-activity-hook.mjs"), "utf8"), /PermissionRequest/);
   } finally {
     await rm(home, { recursive: true, force: true });
   }
 });
 
 test("hook relay normalizes bridge host and sends scoped permission metadata", async () => {
-  const home = await mkdtemp(join(tmpdir(), "agent-halo-relay-"));
+  const home = await mkdtemp(join(tmpdir(), "agent-activity-relay-"));
   await mkdir(join(home, ".letta", "mods"), { recursive: true });
   let received;
   const server = createServer((request, response) => {
@@ -60,12 +60,12 @@ test("hook relay normalizes bridge host and sends scoped permission metadata", a
   const address = server.address();
   assert(address && typeof address === "object");
   await writeFile(
-    join(home, ".letta", "mods", "agent-halo.config.json"),
+    join(home, ".letta", "mods", "agent-activity.config.json"),
     JSON.stringify({ host: "0.0.0.0", port: address.port }),
   );
 
   try {
-    const child = spawn(process.execPath, ["hooks/agent-halo-hook.mjs"], {
+    const child = spawn(process.execPath, ["hooks/agent-activity-hook.mjs"], {
       cwd: repoRoot,
       env: { ...process.env, HOME: home },
       stdio: ["pipe", "pipe", "pipe"],
@@ -93,7 +93,7 @@ test("hook relay normalizes bridge host and sends scoped permission metadata", a
 });
 
 test("AGY hook normalizes bridge host and preserves allow semantics", async () => {
-  const home = await mkdtemp(join(tmpdir(), "agent-halo-agy-relay-"));
+  const home = await mkdtemp(join(tmpdir(), "agent-activity-agy-relay-"));
   await mkdir(join(home, ".letta", "mods"), { recursive: true });
   let received;
   const server = createServer((request, response) => {
@@ -110,14 +110,14 @@ test("AGY hook normalizes bridge host and preserves allow semantics", async () =
   const address = server.address();
   assert(address && typeof address === "object");
   await writeFile(
-    join(home, ".letta", "mods", "agent-halo.config.json"),
+    join(home, ".letta", "mods", "agent-activity.config.json"),
     JSON.stringify({ host: "localhost", port: address.port }),
   );
 
   try {
     const child = spawn(
       process.execPath,
-      ["adapters/agy/agent-halo-agy-hook.mjs", "--event", "PreToolUse"],
+      ["adapters/agy/agent-activity-agy-hook.mjs", "--event", "PreToolUse"],
       {
         cwd: repoRoot,
         env: { ...process.env, HOME: home },
@@ -147,10 +147,10 @@ test("AGY hook normalizes bridge host and preserves allow semantics", async () =
 });
 
 test("standalone bridge serves AGY without Letta and exits with its parent stdio lease", async () => {
-  const home = await mkdtemp(join(tmpdir(), "agent-halo-standalone-"));
+  const home = await mkdtemp(join(tmpdir(), "agent-activity-standalone-"));
   await mkdir(join(home, ".letta", "mods"), { recursive: true });
   await writeFile(
-    join(home, ".letta", "mods", "agent-halo.config.json"),
+    join(home, ".letta", "mods", "agent-activity.config.json"),
     JSON.stringify({ host: "0.0.0.0" }),
   );
   const probe = createServer();
@@ -162,7 +162,7 @@ test("standalone bridge serves AGY without Letta and exits with its parent stdio
 
   const child = spawn(
     process.execPath,
-    ["adapters/bridge/agent-halo-bridge.mjs", "--port", String(port), "--parent-stdio"],
+    ["adapters/bridge/agent-activity-bridge.mjs", "--port", String(port), "--parent-stdio"],
     {
       cwd: repoRoot,
       env: { ...process.env, HOME: home },
@@ -187,7 +187,7 @@ test("standalone bridge serves AGY without Letta and exits with its parent stdio
   try {
     const health = await waitForHealth();
     assert.equal(health.mode, "standalone");
-    assert.equal(health.name, "agent-halo");
+    assert.equal(health.name, "agent-activity");
     assert.match(stdout, new RegExp(`standalone bridge running on 127\\.0\\.0\\.1:${port}`));
     child.stdin.end();
     const exitCode = await new Promise((resolve, reject) => {
@@ -206,7 +206,7 @@ test("standalone bridge serves AGY without Letta and exits with its parent stdio
 });
 
 test("bridge leaves same-cwd hook signals unscoped and keeps unique rapid hook ids", async () => {
-  const home = await mkdtemp(join(tmpdir(), "agent-halo-scope-"));
+  const home = await mkdtemp(join(tmpdir(), "agent-activity-scope-"));
   await mkdir(join(home, ".letta", "mods"), { recursive: true });
   const probe = createServer();
   await new Promise((resolve) => probe.listen(0, "127.0.0.1", resolve));
@@ -214,9 +214,9 @@ test("bridge leaves same-cwd hook signals unscoped and keeps unique rapid hook i
   assert(address && typeof address === "object");
   const port = address.port;
   await new Promise((resolve) => probe.close(resolve));
-  await writeFile(join(home, ".letta", "mods", "agent-halo.config.json"), JSON.stringify({ host: "127.0.0.1", port }));
+  await writeFile(join(home, ".letta", "mods", "agent-activity.config.json"), JSON.stringify({ host: "127.0.0.1", port }));
 
-  const modUrl = new URL("../mods/agent-halo.js", import.meta.url).href;
+  const modUrl = new URL("../mods/agent-activity.js", import.meta.url).href;
   const script = `
     const handlers = new Map();
     const letta = {
@@ -249,11 +249,11 @@ test("bridge leaves same-cwd hook signals unscoped and keeps unique rapid hook i
     const unauthorized = await fetch('http://127.0.0.1:${port}/ingest', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(forgedEvent) });
     const { readFile, stat } = await import('node:fs/promises');
     const { join } = await import('node:path');
-    const tokenPath = join(process.env.HOME, '.letta', 'mods', 'agent-halo.ingest-token');
+    const tokenPath = join(process.env.HOME, '.letta', 'mods', 'agent-activity.ingest-token');
     const token = (await readFile(tokenPath, 'utf8')).trim();
     const tokenMode = (await stat(tokenPath)).mode & 0o777;
     const trustedEvent = { ...forgedEvent, id: 'trusted-runtime', conversationId: 'trusted' };
-    const authorized = await fetch('http://127.0.0.1:${port}/ingest', { method: 'POST', headers: { 'content-type': 'application/json', 'x-agent-halo-token': token }, body: JSON.stringify(trustedEvent) });
+    const authorized = await fetch('http://127.0.0.1:${port}/ingest', { method: 'POST', headers: { 'content-type': 'application/json', 'x-agent-activity-token': token }, body: JSON.stringify(trustedEvent) });
     handlers.get('turn_start')({ agentId: 'agent-test', conversationId: 'conv-stale', input: [] }, ctx('conv-stale'));
     const realDateNow = Date.now;
     const activeAt = realDateNow();
@@ -296,7 +296,7 @@ test("bridge leaves same-cwd hook signals unscoped and keeps unique rapid hook i
 });
 
 test("bridge remembers each event once and amortizes recent correlation cleanup", async () => {
-  const home = await mkdtemp(join(tmpdir(), "agent-halo-hot-path-"));
+  const home = await mkdtemp(join(tmpdir(), "agent-activity-hot-path-"));
   await mkdir(join(home, ".letta", "mods"), { recursive: true });
   const probe = createServer();
   await new Promise((resolve) => probe.listen(0, "127.0.0.1", resolve));
@@ -304,9 +304,9 @@ test("bridge remembers each event once and amortizes recent correlation cleanup"
   assert(address && typeof address === "object");
   const port = address.port;
   await new Promise((resolve) => probe.close(resolve));
-  await writeFile(join(home, ".letta", "mods", "agent-halo.config.json"), JSON.stringify({ host: "127.0.0.1", port }));
+  await writeFile(join(home, ".letta", "mods", "agent-activity.config.json"), JSON.stringify({ host: "127.0.0.1", port }));
 
-  const modUrl = new URL("../mods/agent-halo.js", import.meta.url).href;
+  const modUrl = new URL("../mods/agent-activity.js", import.meta.url).href;
   const script = `
     const NativeMap = globalThis.Map;
     const trackedMaps = [];
@@ -434,7 +434,7 @@ test("bridge remembers each event once and amortizes recent correlation cleanup"
 });
 
 test("bridge normalizes default lanes and safely correlates delayed completion hooks", async () => {
-  const home = await mkdtemp(join(tmpdir(), "agent-halo-detection-"));
+  const home = await mkdtemp(join(tmpdir(), "agent-activity-detection-"));
   await mkdir(join(home, ".letta", "mods"), { recursive: true });
   const probe = createServer();
   await new Promise((resolve) => probe.listen(0, "127.0.0.1", resolve));
@@ -442,9 +442,9 @@ test("bridge normalizes default lanes and safely correlates delayed completion h
   assert(address && typeof address === "object");
   const port = address.port;
   await new Promise((resolve) => probe.close(resolve));
-  await writeFile(join(home, ".letta", "mods", "agent-halo.config.json"), JSON.stringify({ host: "127.0.0.1", port }));
+  await writeFile(join(home, ".letta", "mods", "agent-activity.config.json"), JSON.stringify({ host: "127.0.0.1", port }));
 
-  const modUrl = new URL("../mods/agent-halo.js", import.meta.url).href;
+  const modUrl = new URL("../mods/agent-activity.js", import.meta.url).href;
   const script = `
     const handlers = new Map();
     const letta = {

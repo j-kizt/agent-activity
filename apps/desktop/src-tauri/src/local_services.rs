@@ -321,7 +321,7 @@ mod macos {
     const HTTP_PROBE_TIMEOUT: Duration = Duration::from_millis(120);
     const MAX_HTTP_PROBE_BYTES: usize = 8 * 1024;
     const MAX_LSOF_OUTPUT_BYTES: u64 = 256 * 1024;
-    const FRONTEND_REGISTRY_RELATIVE_PATH: &str = ".config/agent-halo/local-web-frontends.v1.json";
+    const FRONTEND_REGISTRY_RELATIVE_PATH: &str = ".config/agent-activity/local-web-frontends.v1.json";
     const CONTROL_REVALIDATION_BUDGET: Duration = Duration::from_millis(900);
     const STOP_GRACE_PERIOD: Duration = Duration::from_millis(1_200);
     const FORCE_KILL_GRACE_PERIOD: Duration = Duration::from_millis(800);
@@ -702,7 +702,7 @@ mod macos {
             && process.saved_user_id == real_user_id
     }
 
-    fn process_is_agent_halo_ancestor(process: &ProcessIdentity) -> bool {
+    fn process_is_agent_activity_ancestor(process: &ProcessIdentity) -> bool {
         process_ancestry(std::process::id() as i32)
             .iter()
             .any(|ancestor| {
@@ -746,10 +746,10 @@ mod macos {
             return Some("System process is protected".to_string());
         }
         if listener.port == BRIDGE_PORT {
-            return Some("Agent Halo bridge is protected".to_string());
+            return Some("Agent Activity bridge is protected".to_string());
         }
-        if process_is_agent_halo_ancestor(process) {
-            return Some("Agent Halo process is protected".to_string());
+        if process_is_agent_activity_ancestor(process) {
+            return Some("Agent Activity process is protected".to_string());
         }
         if process_is_exact_owner_target(process, owner_targets) {
             return Some("Letta host is protected".to_string());
@@ -807,7 +807,7 @@ mod macos {
         }
         if before.pid <= 1
             || request.port == BRIDGE_PORT
-            || process_is_agent_halo_ancestor(&before)
+            || process_is_agent_activity_ancestor(&before)
             || process_is_protected_host(&before, state)
             || !process_owned_by_current_user(&before)
         {
@@ -1695,7 +1695,7 @@ mod macos {
                 .expect("system time")
                 .as_nanos();
             let directory = std::env::temp_dir().join(format!(
-                "agent-halo-frontend-registry-{}-{unique}",
+                "agent-activity-frontend-registry-{}-{unique}",
                 std::process::id()
             ));
             fs::create_dir_all(&directory).expect("create registry fixture directory");
@@ -1785,7 +1785,7 @@ mod macos {
         }
 
         #[test]
-        fn service_control_protects_agent_halo_bridge_hosts_and_other_users() {
+        fn service_control_protects_agent_activity_bridge_hosts_and_other_users() {
             let user_id = unsafe { libc::geteuid() };
             let process = ProcessIdentity {
                 pid: 42_424,
@@ -1816,7 +1816,7 @@ mod macos {
                     &[],
                 )
                 .as_deref(),
-                Some("Agent Halo bridge is protected")
+                Some("Agent Activity bridge is protected")
             );
             assert_eq!(
                 control_unavailable_reason(
@@ -1826,7 +1826,7 @@ mod macos {
                         conversation_id: "local-conv".to_string(),
                         process_id: process.pid,
                         expected_start_time_ms: process.start_time_ms,
-                        project: "agent-halo".to_string(),
+                        project: "agent-activity".to_string(),
                         herdr_pane_id: None,
                     }],
                 )

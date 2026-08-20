@@ -1,10 +1,10 @@
 # Stopwatch contract
 
-Agent Halo includes one local Stopwatch beside Pomodoro in the **Focus** tab. The two tools are independent and may run at the same time. Stopwatch state never changes Pomodoro phase, cadence, completion, Pet behavior, notification requests, or Keep display awake.
+Agent Activity includes one local Stopwatch beside Pomodoro in the **Focus** tab. The two tools are independent and may run at the same time. Stopwatch state never changes Pomodoro phase, cadence, completion, Pet behavior, notification requests, or Keep display awake.
 
 ## Current run
 
-Renderer state is stored under `agent-halo.stopwatch` with a versioned schema:
+Renderer state is stored under `agent-activity.stopwatch` with a versioned schema:
 
 - **Start** begins a new session or resumes a paused one.
 - **Pause** adds only the active interval to `accumulatedMs`.
@@ -15,7 +15,7 @@ A running session persists `runningSince` as an absolute Unix timestamp plus the
 
 ## History
 
-Finished entries are stored separately under `agent-halo.stopwatch-history`. Each entry contains an id, session start, finish time, and active duration. The local list:
+Finished entries are stored separately under `agent-activity.stopwatch-history`. Each entry contains an id, session start, finish time, and active duration. The local list:
 
 - is ordered newest first and bounded to 500 entries;
 - groups entries by their local finish date and shows the saved active total for each day;

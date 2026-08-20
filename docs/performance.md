@@ -1,6 +1,6 @@
 # Performance baselines
 
-Agent Halo treats performance claims as local regression evidence, not universal guarantees. Measure on the same machine, with the same deterministic workloads, and compare medians/p95 rather than one run.
+Agent Activity treats performance claims as local regression evidence, not universal guarantees. Measure on the same machine, with the same deterministic workloads, and compare medians/p95 rather than one run.
 
 ## Baseline
 
@@ -61,7 +61,7 @@ The `usage-insights-v1` revision raises the primary CSS ceiling to 11,300 bytes 
 
 The `usage-cache-hydration` revision raises JavaScript gzip to 97,800 bytes for versioned persisted usage snapshots. On reload, the renderer hydrates a last-good snapshot immediately as explicitly outdated while the normal provider refresh remains in the background; the cache contains only provider display snapshots, never credentials or raw exports.
 
-The `usage-codex-reset-details` revision raises the CSS gzip ceiling to 11,350 bytes for the compact Codex `Rate Limit Resets` and `Credits` value rows. These rows restore the measured reset-credit contract from the provider snapshot without adding claim actions or expiry timelines to Agent Halo's read-only Usage surface.
+The `usage-codex-reset-details` revision raises the CSS gzip ceiling to 11,350 bytes for the compact Codex `Rate Limit Resets` and `Credits` value rows. These rows restore the measured reset-credit contract from the provider snapshot without adding claim actions or expiry timelines to Agent Activity's read-only Usage surface.
 
 The `usage-native-background-v1` revision keeps the cache-first renderer behavior while dispatching the blocking Codex, Antigravity, Claude, and Cursor provider commands through Tauri's blocking worker pool. Provider refreshes may still run concurrently, but HTTP, language-server, SQLite, and `ccusage` work no longer executes on the renderer invoke path.
 
