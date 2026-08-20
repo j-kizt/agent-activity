@@ -111,7 +111,20 @@ const usageTokens = (
       : usage.totalTokens
     : null;
 
+const FALLBACK_ACTIVITY: IActivityDescriptor = { kind: "session", label: "event", detail: "" };
+
+// Events arrive from external adapters/hooks (Claude, Codex, Antigravity) and from
+// the persisted log, so their `data` shape can't be fully trusted at runtime. A thrown
+// descriptor here blanks the entire popover, so never let a malformed event escape.
 export const getEventActivity = (event: AgentActivityEvent): IActivityDescriptor => {
+  try {
+    return describeEventActivity(event) ?? FALLBACK_ACTIVITY;
+  } catch {
+    return FALLBACK_ACTIVITY;
+  }
+};
+
+const describeEventActivity = (event: AgentActivityEvent): IActivityDescriptor | undefined => {
   switch (event.type) {
     case "bridge_ready":
       return { kind: "bridge", label: "bridge", detail: `:${event.data.port}` };
@@ -222,6 +235,17 @@ export const staleAfterMsForEvent = (event: AgentActivityEvent): number => {
 export const getEventSessionStatus = (
   event: AgentActivityEvent,
   now = new Date(),
+): ISessionSummary["status"] => {
+  try {
+    return describeEventSessionStatus(event, now);
+  } catch {
+    return "idle";
+  }
+};
+
+const describeEventSessionStatus = (
+  event: AgentActivityEvent,
+  now: Date,
 ): ISessionSummary["status"] => {
   const inactive = now.getTime() - Date.parse(event.timestamp) > staleAfterMsForEvent(event);
   switch (event.type) {

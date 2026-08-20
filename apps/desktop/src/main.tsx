@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { BarChart3, Check, ChevronLeft, Focus, GitBranch, List, Server, Settings, Trash2, X } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ErrorInfo, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import type { AgentActivityPresenceStatus } from "@agent-activity/protocol";
 import { SessionContextSummary, StatusGlyph, WorkspaceSessionGroupItem } from "./features/session/components";
@@ -998,4 +998,36 @@ declare global {
   }
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Final safety net: a render error in any child must never leave the popover blank.
+// Show a minimal recoverable fallback instead of an empty (black) webview.
+class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state: { error: Error | null } = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("Agent Activity render error:", error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <main className="app-error">
+          <p>Something went wrong rendering the panel.</p>
+          <button type="button" onClick={() => window.location.reload()}>
+            Reload
+          </button>
+        </main>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+createRoot(document.getElementById("root")!).render(
+  <AppErrorBoundary>
+    <App />
+  </AppErrorBoundary>,
+);
