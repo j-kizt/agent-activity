@@ -466,6 +466,22 @@ fn claude_settings_path() -> Result<PathBuf, String> {
     Ok(PathBuf::from(home).join(".claude").join("settings.json"))
 }
 
+fn agy_hook_install_path() -> Result<PathBuf, String> {
+    let home = std::env::var("HOME").map_err(|_| "HOME is not set".to_string())?;
+    Ok(PathBuf::from(home)
+        .join(".config")
+        .join("agent-activity")
+        .join("agent-activity-agy-hook.mjs"))
+}
+
+fn agy_hooks_json_path() -> Result<PathBuf, String> {
+    let home = std::env::var("HOME").map_err(|_| "HOME is not set".to_string())?;
+    Ok(PathBuf::from(home)
+        .join(".gemini")
+        .join("config")
+        .join("hooks.json"))
+}
+
 const CLAUDE_HOOK_MATCHED_EVENTS: [&str; 2] = ["PreToolUse", "PostToolUse"];
 const CLAUDE_HOOK_PLAIN_EVENTS: [&str; 7] = [
     "UserPromptSubmit",
@@ -4334,6 +4350,102 @@ fn claude_hook_status() -> Result<(String, bool), String> {
     Ok((installed_path, installed))
 }
 
+fn agy_hook_command(installed_path: &str, event: &str) -> String {
+    format!("node {installed_path} --event {event}")
+}
+
+#[tauri::command]
+fn install_agy_hook(app: tauri::AppHandle) -> Result<String, String> {
+    let install_path = agy_hook_install_path()?;
+    let hooks_json_path = agy_hooks_json_path()?;
+
+    let resource_path = app
+        .path()
+        .resolve(
+            "agent-activity-agy-hook.mjs",
+            tauri::path::BaseDirectory::Resource,
+        )
+        .map_err(|e| format!("Failed to resolve resource: {e}"))?;
+
+    let Some(parent) = install_path.parent() else {
+        return Err("Failed to resolve config directory".to_string());
+    };
+    fs::create_dir_all(parent)
+        .map_err(|error| format!("Failed to create config directory: {error}"))?;
+    fs::copy(&resource_path, &install_path)
+        .map_err(|error| format!("Failed to copy hook script: {error}"))?;
+
+    let installed_path = install_path.to_string_lossy().to_string();
+
+    let mut hooks_root: serde_json::Value = if hooks_json_path.exists() {
+        let content = fs::read_to_string(&hooks_json_path)
+            .map_err(|e| format!("Failed to read hooks.json: {e}"))?;
+        if content.trim().is_empty() {
+            serde_json::json!({})
+        } else {
+            serde_json::from_str(&content)
+                .map_err(|e| format!("Failed to parse hooks.json: {e}"))?
+        }
+    } else {
+        serde_json::json!({})
+    };
+
+    if !hooks_root.is_object() {
+        hooks_root = serde_json::json!({});
+    }
+    let root = hooks_root.as_object_mut().expect("hooks.json is object");
+
+    let entry = serde_json::json!({
+        "PreToolUse": [{
+            "matcher": ".*",
+            "hooks": [{"type": "command", "command": agy_hook_command(&installed_path, "PreToolUse")}]
+        }],
+        "PostToolUse": [{
+            "matcher": ".*",
+            "hooks": [{"type": "command", "command": agy_hook_command(&installed_path, "PostToolUse")}]
+        }],
+        "PreInvocation": [
+            {"type": "command", "command": agy_hook_command(&installed_path, "PreInvocation")}
+        ],
+        "Stop": [
+            {"type": "command", "command": agy_hook_command(&installed_path, "Stop")}
+        ]
+    });
+    root.insert("agent-activity".to_string(), entry);
+
+    let Some(hooks_parent) = hooks_json_path.parent() else {
+        return Err("Failed to resolve Gemini config directory".to_string());
+    };
+    fs::create_dir_all(hooks_parent)
+        .map_err(|error| format!("Failed to create Gemini config directory: {error}"))?;
+
+    let json_string = serde_json::to_string_pretty(&hooks_root)
+        .map_err(|e| format!("Failed to stringify hooks.json: {e}"))?;
+    fs::write(&hooks_json_path, format!("{json_string}\n"))
+        .map_err(|error| format!("Failed to write hooks.json: {error}"))?;
+
+    Ok(installed_path)
+}
+
+#[tauri::command]
+fn agy_hook_status() -> Result<(String, bool), String> {
+    let install_path = agy_hook_install_path()?;
+    let hooks_json_path = agy_hooks_json_path()?;
+    let installed_path = install_path.to_string_lossy().to_string();
+
+    let mut in_hooks = false;
+    if hooks_json_path.exists() {
+        if let Ok(content) = fs::read_to_string(&hooks_json_path) {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                in_hooks = json.get("agent-activity").is_some();
+            }
+        }
+    }
+
+    let installed = install_path.exists() && in_hooks;
+    Ok((installed_path, installed))
+}
+
 #[tauri::command]
 fn focus_terminal(
     conversation_id: String,
@@ -5639,6 +5751,8 @@ pub fn run() {
             focus_terminal,
             install_claude_hook,
             claude_hook_status,
+            install_agy_hook,
+            agy_hook_status,
             github_repo_status,
             github_available_repos,
             github_accounts,

@@ -1,8 +1,7 @@
 Agent Activity is a local macOS menu-bar popover that surfaces live Claude Code / Codex activity, provider usage, local services, and the state of the GitHub repos you track.
 
 ### What's new
-- **GitHub repos are tracked per gh account** — the tab now shows only the repos you track for the active account, and switching accounts swaps the list. Your existing tracked repos are migrated onto the active account automatically.
+- **Antigravity hooks plugin** — Settings → Plugins now has a second installable row next to Claude Code hooks. One-click install writes the hook into `~/.gemini/config/hooks.json` and reports its status.
+- Antigravity lifecycle events feed live presence: `PreToolUse` → tool start, `PostToolUse` → tool end, `PreInvocation` → conversation/turn start, `Stop` → turn complete. `PreToolUse` always allows, so it never blocks Antigravity.
 
-### Recent fixes
-- GitHub tab works when the app is opened from Finder/Applications (login-shell PATH is imported so `gh` and `node` resolve)
-- Release notes are shown in Settings → Update
+Restart Antigravity after installing so it picks up the new hook.

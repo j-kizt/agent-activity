@@ -112,6 +112,7 @@ const App = () => {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [setupOpen, setSetupOpen] = useState(false);
   const [hookStatus, setHookStatus] = useState<IHookStatus>({ path: null, installed: null });
+  const [agyStatus, setAgyStatus] = useState<IHookStatus>({ path: null, installed: null });
   const [dismissedSessionIds, setDismissedSessionIds] = useState<DismissedSessionRegistry>(readDismissedSessionIds);
   const [deletedSessionIds, setDeletedSessionIds] = useState<DeletedSessionRegistry>(readDeletedSessionIds);
   const [keepAwakeEnabled, setKeepAwakeEnabled] = useState(readKeepAwakeEnabled);
@@ -599,6 +600,20 @@ const App = () => {
     }
   };
 
+  const loadAgyStatus = async () => {
+    if (!canUseNativeControls) {
+      setAgyStatus({ path: null, installed: null });
+      return;
+    }
+
+    try {
+      const [path, installed] = await invoke<[string, boolean]>("agy_hook_status");
+      setAgyStatus({ path, installed });
+    } catch {
+      setAgyStatus({ path: null, installed: null });
+    }
+  };
+
   const acknowledgeDone = () => {
     const conversationId = activitySession?.status === "done" ? activitySession.conversationId : presence.conversationId;
     setAcknowledgedConversationId(conversationId);
@@ -638,6 +653,24 @@ const App = () => {
     }
   };
 
+  const installAgy = async () => {
+    if (!canUseNativeControls) {
+      setNativeAction({ bridgeOnline: nativeAction.bridgeOnline, message: "Open with pnpm desktop:dev" });
+      return;
+    }
+
+    try {
+      const path = await invoke<string>("install_agy_hook");
+      setAgyStatus({ path, installed: true });
+      setNativeAction({ bridgeOnline: nativeAction.bridgeOnline, message: `Installed → ${shortenPath(path)} · restart Antigravity` });
+    } catch (error) {
+      setNativeAction({
+        bridgeOnline: nativeAction.bridgeOnline,
+        message: error instanceof Error ? error.message : "Antigravity hook install failed",
+      });
+    }
+  };
+
   const focusSelectedSession = async (session: ISessionDetail | ISessionSummary) => {
     if (!canUseNativeControls) {
       setSessionAction({ ok: false, message: "Focus needs the desktop runtime" });
@@ -664,6 +697,7 @@ const App = () => {
   useEffect(() => {
     if (setupOpen) {
       void loadHookStatus();
+      void loadAgyStatus();
       void checkBridge();
     }
   }, [setupOpen]);
@@ -744,9 +778,11 @@ const App = () => {
                   keepAwakeEnabled={keepAwakeEnabled}
                   keepAwakeError={keepAwakeError}
                   hookStatus={hookStatus}
+                  agyStatus={agyStatus}
                   nativeAction={nativeAction}
                   onCheckBridge={() => void checkBridge()}
                   onInstallHook={() => void installHook()}
+                  onInstallAgy={() => void installAgy()}
                   onKeepAwakeChange={updateKeepAwakeEnabled}
                   terminal={terminal}
                   onTerminalChange={(choice) => { setTerminal(choice); writeTerminalChoice(choice); }}
