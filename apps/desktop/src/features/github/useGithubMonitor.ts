@@ -1,0 +1,136 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  fetchAccounts,
+  fetchRepoStatus,
+  readStatusCache,
+  readTrackedRepos,
+  switchAccount,
+  writeStatusCache,
+  writeTrackedRepos,
+} from "./adapter";
+import type { GithubRepoState, IGhAccount } from "./types";
+
+const POLL_INTERVAL_MS = 45_000;
+
+interface IUseGithubMonitorOptions {
+  active: boolean;
+  canUseNativeControls: boolean;
+}
+
+export interface IGithubMonitor {
+  trackedRepos: string[];
+  statuses: Record<string, GithubRepoState>;
+  accounts: IGhAccount[];
+  activeAccount: string | null;
+  addRepo: (repo: string) => void;
+  removeRepo: (repo: string) => void;
+  refresh: () => void;
+  refreshAccounts: () => Promise<void>;
+  switchTo: (user: string) => Promise<void>;
+}
+
+export const useGithubMonitor = ({ active, canUseNativeControls }: IUseGithubMonitorOptions): IGithubMonitor => {
+  const [trackedRepos, setTrackedRepos] = useState<string[]>(readTrackedRepos);
+  const [statuses, setStatuses] = useState<Record<string, GithubRepoState>>(() => {
+    const cache = readStatusCache();
+    const initial: Record<string, GithubRepoState> = {};
+    for (const [repo, data] of Object.entries(cache)) {
+      initial[repo] = { status: "ready", data, updatedAt: 0 };
+    }
+    return initial;
+  });
+  const [accounts, setAccounts] = useState<IGhAccount[]>([]);
+  const trackedRef = useRef(trackedRepos);
+  trackedRef.current = trackedRepos;
+
+  const refreshRepo = useCallback(async (repo: string) => {
+    setStatuses((current) => ({
+      ...current,
+      [repo]: current[repo]?.status === "ready"
+        ? current[repo]
+        : { status: "loading" },
+    }));
+    try {
+      const data = await fetchRepoStatus(repo);
+      setStatuses((current) => ({ ...current, [repo]: { status: "ready", data, updatedAt: Date.now() } }));
+      const cache = readStatusCache();
+      cache[repo] = data;
+      writeStatusCache(cache);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setStatuses((current) => {
+        const previous = current[repo];
+        const carried = previous && previous.status === "ready" ? { data: previous.data, updatedAt: previous.updatedAt } : {};
+        return { ...current, [repo]: { status: "error", message, ...carried } };
+      });
+    }
+  }, []);
+
+  const refresh = useCallback(() => {
+    if (!canUseNativeControls) return;
+    for (const repo of trackedRef.current) void refreshRepo(repo);
+  }, [canUseNativeControls, refreshRepo]);
+
+  const refreshAccounts = useCallback(async () => {
+    if (!canUseNativeControls) return;
+    try {
+      setAccounts(await fetchAccounts());
+    } catch {
+      setAccounts([]);
+    }
+  }, [canUseNativeControls]);
+
+  const addRepo = useCallback((repo: string) => {
+    const trimmed = repo.trim();
+    setTrackedRepos((current) => {
+      if (current.includes(trimmed)) return current;
+      const next = [...current, trimmed];
+      writeTrackedRepos(next);
+      return next;
+    });
+    void refreshRepo(trimmed);
+  }, [refreshRepo]);
+
+  const removeRepo = useCallback((repo: string) => {
+    setTrackedRepos((current) => {
+      const next = current.filter((r) => r !== repo);
+      writeTrackedRepos(next);
+      return next;
+    });
+    setStatuses((current) => {
+      const { [repo]: _removed, ...rest } = current;
+      return rest;
+    });
+    const cache = readStatusCache();
+    delete cache[repo];
+    writeStatusCache(cache);
+  }, []);
+
+  const switchTo = useCallback(async (user: string) => {
+    await switchAccount(user);
+    await refreshAccounts();
+    refresh();
+  }, [refresh, refreshAccounts]);
+
+  useEffect(() => {
+    if (!active || !canUseNativeControls) return undefined;
+    void refreshAccounts();
+    refresh();
+    const timer = window.setInterval(refresh, POLL_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [active, canUseNativeControls, refresh, refreshAccounts]);
+
+  const activeAccount = accounts.find((account) => account.active)?.login ?? null;
+
+  return {
+    trackedRepos,
+    statuses,
+    accounts,
+    activeAccount,
+    addRepo,
+    removeRepo,
+    refresh,
+    refreshAccounts,
+    switchTo,
+  };
+};

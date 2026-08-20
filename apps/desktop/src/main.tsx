@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { BarChart3, Check, ChevronLeft, Focus, List, Server, Settings, Timer, Trash2, X } from "lucide-react";
+import { BarChart3, Check, ChevronLeft, Focus, GitBranch, List, Server, Settings, Timer, Trash2, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createRoot } from "react-dom/client";
 import type { AgentActivityPresenceStatus } from "@agent-activity/protocol";
@@ -40,6 +40,8 @@ import { AgentUsageList } from "./features/usage/components";
 import type { IUsageSettings } from "./features/usage/types";
 import { useAgentUsageList } from "./features/usage/useAgentUsageList";
 import { useRuntimeMonitor } from "./features/runtime/useRuntimeMonitor";
+import { GithubPanel } from "./features/github/components";
+import { useGithubMonitor } from "./features/github/useGithubMonitor";
 import "./styles.css";
 
 const KEEP_AWAKE_STORAGE_KEY = "agent-activity.keep-awake-while-working";
@@ -67,7 +69,7 @@ interface IHookStatus {
   installed: boolean | null;
 }
 
-type MainPanelTab = "sessions" | "pomodoro" | "usage" | "services";
+type MainPanelTab = "sessions" | "pomodoro" | "usage" | "services" | "github";
 
 interface IStatusView {
   status: AgentActivityPresenceStatus | "stale";
@@ -179,6 +181,10 @@ const App = () => {
     servicesActive: activeMainTab === "services" && !setupOpen && !selectedSessionId,
     sessions: allSessions,
   });
+  const githubMonitor = useGithubMonitor({
+    active: activeMainTab === "github" && !setupOpen && !selectedSessionId,
+    canUseNativeControls,
+  });
 
   useEffect(() => {
     if (!clearCompletedArmed) return undefined;
@@ -236,6 +242,8 @@ const App = () => {
           ? "Usage"
           : activeMainTab === "services"
             ? "Services"
+          : activeMainTab === "github"
+            ? "GitHub"
           : sessionGroups.length === 0
           ? "Agent Activity"
           : sessionGroups.length === 1
@@ -477,7 +485,7 @@ const App = () => {
   const handleMainTabKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, currentTab: MainPanelTab) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
-    const tabs: MainPanelTab[] = ["sessions", "pomodoro", "usage", "services"];
+    const tabs: MainPanelTab[] = ["sessions", "pomodoro", "usage", "services", "github"];
     const currentIndex = tabs.indexOf(currentTab);
     const nextTab = event.key === "Home"
       ? tabs[0]
@@ -794,6 +802,9 @@ const App = () => {
                     <button id="main-tab-services" className="header-tab" data-active={activeMainTab === "services"} data-panel-focus-target={activeMainTab === "services" ? "true" : undefined} type="button" role="tab" aria-label="Services" aria-selected={activeMainTab === "services"} aria-controls="main-panel-services" tabIndex={activeMainTab === "services" ? 0 : -1} onKeyDown={(event) => handleMainTabKeyDown(event, "services")} onClick={(event) => { event.stopPropagation(); activateMainTab("services"); }} data-tauri-drag-region="false" title="Services">
                       <Server size={13} strokeWidth={2.3} />
                     </button>
+                    <button id="main-tab-github" className="header-tab" data-active={activeMainTab === "github"} data-panel-focus-target={activeMainTab === "github" ? "true" : undefined} type="button" role="tab" aria-label="GitHub" aria-selected={activeMainTab === "github"} aria-controls="main-panel-github" tabIndex={activeMainTab === "github" ? 0 : -1} onKeyDown={(event) => handleMainTabKeyDown(event, "github")} onClick={(event) => { event.stopPropagation(); activateMainTab("github"); }} data-tauri-drag-region="false" title="GitHub">
+                      <GitBranch size={13} strokeWidth={2.3} />
+                    </button>
                   </div>
                   <button className="header-tab" type="button" aria-label="Setup" onClick={(event) => { event.stopPropagation(); openSetup(); }} data-tauri-drag-region="false" title="Setup">
                     <Settings size={13} strokeWidth={2.3} />
@@ -875,10 +886,12 @@ const App = () => {
                 <Suspense fallback={<div className="empty-text small">Loading Services…</div>}>
                   <LocalServicesPanel monitor={runtimeMonitor} />
                 </Suspense>
+              ) : activeMainTab === "github" ? (
+                <GithubPanel monitor={githubMonitor} canUseNativeControls={canUseNativeControls} />
               ) : sessions.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-glyph">◌</div>
-                  <div className="empty-text">Waiting for Letta Code</div>
+                  <div className="empty-text">Waiting for Claude Code</div>
                   <button className="btn accent" type="button" onClick={(event) => { event.stopPropagation(); openSetup(); }} data-tauri-drag-region="false">
                     <Settings size={13} strokeWidth={2.3} />
                     Open setup

@@ -30,10 +30,16 @@ use std::os::unix::{
     net::UnixStream,
 };
 
+mod github;
 mod keep_awake;
 mod local_services;
 mod notification;
 mod standalone_bridge;
+
+use github::{
+    github_accounts, github_available_repos, github_device_poll, github_device_start,
+    github_repo_status, github_switch_account,
+};
 
 use keep_awake::KeepAwakeState;
 use local_services::{control_local_service, local_services, LocalServicesControlState};
@@ -5465,6 +5471,12 @@ pub fn run() {
             focus_terminal,
             install_claude_hook,
             claude_hook_status,
+            github_repo_status,
+            github_available_repos,
+            github_accounts,
+            github_switch_account,
+            github_device_start,
+            github_device_poll,
             control_local_service,
             local_services,
             notification_permission_state,

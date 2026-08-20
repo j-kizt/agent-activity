@@ -1,0 +1,216 @@
+.gh-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  height: 100%;
+  padding: 12px 0 0;
+  overflow-y: auto;
+  color: var(--text-2);
+}
+
+.gh-account-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+}
+
+.gh-account-select {
+  flex: 1;
+  min-width: 0;
+  background: var(--fill);
+  color: var(--text);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+.gh-account-note {
+  font-size: 10.5px;
+}
+
+.gh-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--hair);
+  border-radius: 7px;
+  background: var(--fill);
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.gh-icon-btn:hover {
+  background: var(--fill-2);
+  color: var(--text);
+}
+
+.gh-add {
+  position: relative;
+}
+
+.gh-picker {
+  margin-top: 6px;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gh-filter {
+  width: 100%;
+  background: var(--fill);
+  color: var(--text);
+  border: 1px solid var(--hair);
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.gh-picker-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.gh-picker-item {
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--text-2);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.gh-picker-item:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.gh-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gh-card {
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  background: var(--fill);
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.gh-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gh-repo-name {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gh-repo-name:hover {
+  color: var(--accent);
+}
+
+.gh-card-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gh-card-line.error {
+  color: var(--danger);
+  white-space: normal;
+}
+
+.gh-card-line .muted,
+.gh-account-note.muted,
+.muted {
+  color: var(--text-3);
+}
+
+.gh-link {
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.gh-link:hover {
+  color: var(--text);
+}
+
+.gh-dot {
+  font-weight: 700;
+}
+
+.gh-dot.ok {
+  color: var(--done);
+}
+
+.gh-dot.running {
+  color: var(--accent);
+}
+
+.gh-dot.error {
+  color: var(--danger);
+}
+
+.gh-dot.muted {
+  color: var(--text-3);
+}
+
+.gh-device {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+}
+
+.gh-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--text);
+  background: var(--fill-2);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.gh-empty {
+  color: var(--text-3);
+  font-size: 12px;
+  padding: 14px 4px;
+  text-align: center;
+}
