@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -16,6 +16,15 @@ const run = (command, args) => {
   const result = spawnSync(command, args, { cwd: root, stdio: "inherit" });
   if (result.status !== 0) process.exit(result.status ?? 1);
 };
+
+// createUpdaterArtifacts signs the bundle at build time, so a local install needs
+// the updater signing key. Load it from the local key file when present so
+// `pnpm desktop:install` works without manually exporting env vars.
+const signingKeyPath = join(homedir(), ".config", "agent-activity", "agent-activity-updater.key");
+if (!process.env.TAURI_SIGNING_PRIVATE_KEY && existsSync(signingKeyPath)) {
+  process.env.TAURI_SIGNING_PRIVATE_KEY = readFileSync(signingKeyPath, "utf8").trim();
+  process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD ??= "";
+}
 
 run("pnpm", ["desktop:build"]);
 
@@ -61,5 +70,5 @@ spawnSync("mdimport", [installPath], { stdio: "ignore" });
 run("open", ["-g", installPath]);
 
 console.log(`Installed and restarted ${appName} → ${installPath}`);
-console.log("Open it, then use Setup → Install/Reinstall to install the Letta mod if needed.");
-console.log("After first mod install, reload or restart Letta Code so it loads ~/.letta/mods/agent-activity.js.");
+console.log("Click the menu-bar icon to open it, then Settings → Plugins → Install to connect Claude Code hooks.");
+console.log("Restart Claude Code (or start a new session) so it loads the hook.");
