@@ -36,7 +36,7 @@ It does **not** require Letta. Everything runs locally on `127.0.0.1`.
 ## Architecture
 
 ```text
-Claude Code hooks ─┐
+Claude Code hooks  ─┐
 Codex notify       ─┼─→  adapter (.mjs)  ─→  POST /ingest  ─→  local bridge (127.0.0.1:47621)
                     │                                              │
                     └────────────────────────────────────→   SSE /events
