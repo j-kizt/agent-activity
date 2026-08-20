@@ -559,7 +559,17 @@ export const AgentUsageList = ({
 }: IAgentUsageListProps) => {
   const [selectedId, setSelectedId] =
     useState<UsageSidebarSelection | null>(null);
-  const providers = useMemo(() => USAGE_PROVIDERS, []);
+  const providers = useMemo(() => {
+    const isInUse = (usage: IAgentUsageState | undefined): boolean =>
+      usage?.status === "online" ||
+      (usage?.metrics.some((metric) => metric.statusLevel !== "unavailable") ?? false);
+    return USAGE_PROVIDERS.map((provider, index) => ({ provider, index }))
+      .sort((a, b) => {
+        const rank = Number(isInUse(usages[b.provider.id])) - Number(isInUse(usages[a.provider.id]));
+        return rank !== 0 ? rank : a.index - b.index;
+      })
+      .map((entry) => entry.provider);
+  }, [usages]);
   const selected =
     selectedId === "settings"
       ? null
@@ -588,7 +598,8 @@ export const AgentUsageList = ({
   const handleTabKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, current: UsageSidebarSelection) => {
     if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
-    const selections: UsageSidebarSelection[] = [...providers.map((provider) => provider.id), "settings"];
+    const selections: UsageSidebarSelection[] = providers.map((provider) => provider.id);
+    if (selections.length === 0) return;
     const currentIndex = selections.indexOf(current);
     const next = event.key === "Home"
       ? selections[0]
@@ -602,19 +613,36 @@ export const AgentUsageList = ({
     <div className="usage-list" aria-label="Usage providers">
       <div className="usage-list-topline">
         <span>Usage</span>
-        <button
-          className="usage-refresh"
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onRefresh();
-          }}
-          data-tauri-drag-region="false"
-          title="Refresh usage"
-          aria-label="Refresh usage"
-        >
-          <RefreshCw size={12} strokeWidth={2.2} />
-        </button>
+        <div className="usage-topline-actions">
+          <button
+            className="usage-refresh"
+            type="button"
+            data-active={active === "settings"}
+            aria-pressed={active === "settings"}
+            onClick={(event) => {
+              event.stopPropagation();
+              setSelectedId(active === "settings" ? (providers[0]?.id ?? "settings") : "settings");
+            }}
+            data-tauri-drag-region="false"
+            title="Usage settings"
+            aria-label="Usage settings"
+          >
+            <Settings size={12} strokeWidth={2.2} />
+          </button>
+          <button
+            className="usage-refresh"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRefresh();
+            }}
+            data-tauri-drag-region="false"
+            title="Refresh usage"
+            aria-label="Refresh usage"
+          >
+            <RefreshCw size={12} strokeWidth={2.2} />
+          </button>
+        </div>
       </div>
       <div className="usage-layout">
         <div
@@ -650,26 +678,6 @@ export const AgentUsageList = ({
               ) : null}
             </button>
           ))}
-          <button
-            id="usage-tab-settings"
-            className="usage-side-tab usage-side-settings"
-            data-active={active === "settings"}
-            type="button"
-            role="tab"
-            aria-selected={active === "settings"}
-            aria-controls="usage-provider-panel"
-            tabIndex={active === "settings" ? 0 : -1}
-            onKeyDown={(event) => handleTabKeyDown(event, "settings")}
-            onClick={(event) => {
-              event.stopPropagation();
-              setSelectedId("settings");
-            }}
-            data-tauri-drag-region="false"
-            title="Usage settings"
-          >
-            <Settings size={13} strokeWidth={2.2} />
-            <span>Settings</span>
-          </button>
         </div>
         <div id="usage-provider-panel" className="usage-detail-panel" role="tabpanel" aria-labelledby={`usage-tab-${active}`}>
           {active === "settings" ? (

@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { BarChart3, Check, ChevronLeft, Focus, GitBranch, List, Server, Settings, Timer, Trash2, X } from "lucide-react";
+import { BarChart3, Check, ChevronLeft, Focus, GitBranch, List, Server, Settings, Trash2, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createRoot } from "react-dom/client";
 import type { AgentActivityPresenceStatus } from "@agent-activity/protocol";
@@ -30,9 +30,6 @@ import {
 } from "./features/session/selectors";
 import type { DeletedSessionRegistry, DismissedSessionRegistry, ISessionDetail, ISessionSummary, IWorkspaceSessionGroup } from "./features/session/types";
 import { useAgentActivityPresence } from "./features/presence/useAgentActivityPresence";
-import { FocusToolsPanel } from "./features/focus/components";
-import { usePomodoro } from "./features/pomodoro/usePomodoro";
-import { useStopwatch } from "./features/stopwatch/useStopwatch";
 import { SetupPanel } from "./features/setup/SetupPanel";
 import type { IDisplayStateSnapshot } from "./features/setup/display";
 import { readUsageSettings, writeUsageSettings } from "./features/usage/adapters";
@@ -69,7 +66,7 @@ interface IHookStatus {
   installed: boolean | null;
 }
 
-type MainPanelTab = "sessions" | "pomodoro" | "usage" | "services" | "github";
+type MainPanelTab = "sessions" | "usage" | "services" | "github";
 
 interface IStatusView {
   status: AgentActivityPresenceStatus | "stale";
@@ -134,13 +131,11 @@ const App = () => {
       ? ({ ...view, status: "idle", label: "idle" } satisfies IStatusView)
       : view;
   const canUseNativeControls = typeof window.__TAURI_INTERNALS__ !== "undefined";
-  const pomodoro = usePomodoro(canUseNativeControls);
-  const stopwatch = useStopwatch();
   const isConnected = connection.status === "connected";
   const connectionTitle = DEMO_MODE ? "Demo mode" : (connection.message ?? connection.status);
   const workspace = shortenPath(presence.cwd);
   const project = projectName(presence.cwd);
-  const model = presence.model?.split("/").slice(-1)[0] ?? "Letta Code";
+  const model = presence.model?.split("/").slice(-1)[0] ?? "Claude Code";
   const allSessions = useMemo(
     () =>
       buildSessionSummaries(sessionEventRegistry, presence, now).filter(
@@ -236,14 +231,12 @@ const App = () => {
     ? "Setup"
     : selectedSession
       ? selectedSession.project
-      : activeMainTab === "pomodoro"
-        ? "Focus"
-        : activeMainTab === "usage"
-          ? "Usage"
-          : activeMainTab === "services"
-            ? "Services"
-          : activeMainTab === "github"
-            ? "GitHub"
+      : activeMainTab === "usage"
+        ? "Usage"
+        : activeMainTab === "services"
+          ? "Services"
+        : activeMainTab === "github"
+          ? "GitHub"
           : sessionGroups.length === 0
           ? "Agent Activity"
           : sessionGroups.length === 1
@@ -282,12 +275,6 @@ const App = () => {
     fallbackActivityStatus,
   );
   const hasAgentLiveActivity = isWorkingActivity || activityStatus === "attention" || activityStatus === "done" || activityStatus === "error";
-  const hasCriticalAgentActivity = activityStatus === "attention" || activityStatus === "error";
-  const hasPomodoroActivity = pomodoro.state.status === "running" || pomodoro.state.status === "paused" || pomodoro.completionVisible;
-  const showPomodoroActivity = !hasCriticalAgentActivity && hasPomodoroActivity;
-  const hasStopwatchActivity = stopwatch.state.status === "running" || stopwatch.state.status === "paused";
-  const showStopwatchActivity = !hasCriticalAgentActivity && !hasPomodoroActivity && hasStopwatchActivity;
-  const hasLiveActivity = hasAgentLiveActivity || showPomodoroActivity || showStopwatchActivity;
 
   useEffect(() => {
     if (!canUseNativeControls) {
@@ -336,15 +323,6 @@ const App = () => {
     };
   }, [canUseNativeControls, hasWorkingActivity, keepAwakeEnabled]);
 
-  const pillDetail = (() => {
-    if (showPomodoroActivity) return pomodoro.completionVisible ? "Done" : pomodoro.countdownLabel;
-    if (showStopwatchActivity) return stopwatch.compactElapsedLabel;
-    if (activitySession?.status === "working") return activitySession.detail === "thinking" ? "Thinking" : activitySession.detail;
-    if (activityStatus === "attention") return activitySession?.detail ?? (lastLiveEvent?.type === "attention_requested" && lastLiveEvent.data.kind === "question" ? "Question" : "Approval needed");
-    if (activitySession?.status === "done") return "Done";
-    if (activityStatus === "error") return "Error";
-    return project;
-  })();
   const setupGuidance = (() => {
     if (!canUseNativeControls) {
       return {
@@ -485,7 +463,7 @@ const App = () => {
   const handleMainTabKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, currentTab: MainPanelTab) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
-    const tabs: MainPanelTab[] = ["sessions", "pomodoro", "usage", "services", "github"];
+    const tabs: MainPanelTab[] = ["sessions", "usage", "services", "github"];
     const currentIndex = tabs.indexOf(currentTab);
     const nextTab = event.key === "Home"
       ? tabs[0]
@@ -506,10 +484,6 @@ const App = () => {
   const updateUsageSettings = (settings: IUsageSettings) => {
     setUsageSettings(settings);
     writeUsageSettings(settings);
-  };
-
-  const resetAllPomodoroCycle = () => {
-    pomodoro.resetAll();
   };
 
   const updateKeepAwakeEnabled = (enabled: boolean) => {
@@ -737,7 +711,7 @@ const App = () => {
         herdrSourcePid: session.herdrTarget?.sourcePid ?? null,
         herdrSourceStartedAtMs: session.herdrTarget?.sourceStartedAtMs ?? null,
       });
-      const exactMatch = message.startsWith("Focused Herdr ·") || message.startsWith("Focused Ghostty ·");
+      const exactMatch = message.startsWith("Focused Herdr ·") || message.startsWith("Focused iTerm ·");
       setSessionAction({ ok: exactMatch, message });
     } catch (error) {
       setSessionAction({ ok: false, message: error instanceof Error ? error.message : "Terminal focus failed" });
@@ -753,8 +727,7 @@ const App = () => {
   }, [setupOpen]);
 
   return (
-    <main className="overlay-root" data-live={hasLiveActivity ? "true" : "false"} data-running={isWorkingActivity || (showPomodoroActivity && pomodoro.state.status === "running") || (!hasCriticalAgentActivity && stopwatch.state.status === "running") ? "true" : "false"} data-status={activityViewStatus} data-pomodoro-status={pomodoro.state.status} data-pomodoro-complete={pomodoro.completionVisible ? "true" : "false"} data-stopwatch-status={stopwatch.state.status}>
-      <section className="notch-wrap is-open">
+    <main className="overlay-root" data-live={hasAgentLiveActivity ? "true" : "false"} data-running={isWorkingActivity ? "true" : "false"} data-status={activityViewStatus}>
         <div
           ref={surfaceRef}
           className="halo-surface"
@@ -792,9 +765,6 @@ const App = () => {
                   <div className="header-tablist" role="tablist" aria-label="Agent Activity sections">
                     <button id="main-tab-sessions" className="header-tab" data-active={activeMainTab === "sessions"} data-panel-focus-target={activeMainTab === "sessions" ? "true" : undefined} type="button" role="tab" aria-label="Sessions" aria-selected={activeMainTab === "sessions"} aria-controls="main-panel-sessions" tabIndex={activeMainTab === "sessions" ? 0 : -1} onKeyDown={(event) => handleMainTabKeyDown(event, "sessions")} onClick={(event) => { event.stopPropagation(); activateMainTab("sessions"); }} data-tauri-drag-region="false" title="Sessions">
                       <List size={13} strokeWidth={2.3} />
-                    </button>
-                    <button id="main-tab-pomodoro" className="header-tab" data-active={activeMainTab === "pomodoro"} data-panel-focus-target={activeMainTab === "pomodoro" ? "true" : undefined} type="button" role="tab" aria-label="Focus" aria-selected={activeMainTab === "pomodoro"} aria-controls="main-panel-pomodoro" tabIndex={activeMainTab === "pomodoro" ? 0 : -1} onKeyDown={(event) => handleMainTabKeyDown(event, "pomodoro")} onClick={(event) => { event.stopPropagation(); activateMainTab("pomodoro"); }} data-tauri-drag-region="false" title="Focus">
-                      <Timer size={13} strokeWidth={2.3} />
                     </button>
                     <button id="main-tab-usage" className="header-tab" data-active={activeMainTab === "usage"} data-panel-focus-target={activeMainTab === "usage" ? "true" : undefined} type="button" role="tab" aria-label="Usage" aria-selected={activeMainTab === "usage"} aria-controls="main-panel-usage" tabIndex={activeMainTab === "usage" ? 0 : -1} onKeyDown={(event) => handleMainTabKeyDown(event, "usage")} onClick={(event) => { event.stopPropagation(); activateMainTab("usage"); }} data-tauri-drag-region="false" title="Usage">
                       <BarChart3 size={13} strokeWidth={2.3} />
@@ -847,7 +817,7 @@ const App = () => {
                   <SessionContextSummary session={selectedSession} />
                   <div className="detail-path" title={selectedSession.cwd}>{shortenPath(selectedSession.cwd)}</div>
                   {canUseNativeControls ? (
-                    <div className="capability-note">Focus matches Ghostty terminal cwd/title and selects its tab</div>
+                    <div className="capability-note">Focus matches iTerm terminal cwd/title and selects its session</div>
                   ) : (
                     <div className="capability-note">Focus needs the desktop runtime</div>
                   )}
@@ -874,12 +844,6 @@ const App = () => {
                     </div>
                   )}
                 </div>
-              ) : activeMainTab === "pomodoro" ? (
-                <FocusToolsPanel
-                  pomodoro={pomodoro}
-                  stopwatch={stopwatch}
-                  onResetAllPomodoro={resetAllPomodoroCycle}
-                />
               ) : activeMainTab === "usage" ? (
                 <AgentUsageList usages={agentUsages} onRefresh={refreshAgentUsage} settings={usageSettings} onSettingsChange={updateUsageSettings} />
               ) : activeMainTab === "services" ? (
@@ -1047,7 +1011,6 @@ const App = () => {
             ) : null}
           </div>
         </div>
-      </section>
     </main>
   );
 };

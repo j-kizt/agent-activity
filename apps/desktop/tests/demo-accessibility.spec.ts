@@ -63,13 +63,6 @@ test("main section tabs provide roving keyboard navigation and panel relationshi
   await sessionsTab.focus();
   await page.keyboard.press("ArrowRight");
 
-  const pomodoroTab = page.getByRole("tab", { name: "Focus" });
-  await expect(pomodoroTab).toBeFocused();
-  await expect(pomodoroTab).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tabpanel", { name: "Focus" })).toBeVisible();
-
-  await page.keyboard.press("ArrowRight");
-
   const usageTab = page.getByRole("tab", { name: "Usage" });
   await expect(usageTab).toBeFocused();
   await expect(usageTab).toHaveAttribute("aria-selected", "true");

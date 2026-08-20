@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { GitBranch, GitCommit, GitPullRequest, Plus, RefreshCw, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { deviceStart, devicePoll, fetchAvailableRepos, isValidRepo } from "./adapter";
+import { useCallback, useState } from "react";
+import { fetchAvailableRepos } from "./adapter";
 import type { GithubRepoState, IGithubRun } from "./types";
 import type { IGithubMonitor } from "./useGithubMonitor";
 
@@ -165,73 +165,29 @@ const AddRepo = ({ tracked, onAdd }: IAddRepoProps) => {
   );
 };
 
-const AddAccount = ({ onDone }: { onDone: () => void }) => {
-  const [phase, setPhase] = useState<"idle" | "waiting" | "error">("idle");
-  const [message, setMessage] = useState<string | null>(null);
-  const [userCode, setUserCode] = useState<string | null>(null);
-  const timerRef = useRef<number | null>(null);
+const ADD_ACCOUNT_COMMAND = "gh auth login";
 
-  const stop = () => {
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-    timerRef.current = null;
-  };
-
-  useEffect(() => () => stop(), []);
-
-  const begin = async () => {
-    setPhase("waiting");
-    setMessage(null);
-    try {
-      const start = await deviceStart();
-      setUserCode(start.user_code);
-      openExternal(start.verification_uri);
-      const deadline = Date.now() + start.expires_in * 1000;
-      const poll = async () => {
-        if (Date.now() > deadline) {
-          setPhase("error");
-          setMessage("Code expired — try again");
-          return;
-        }
-        try {
-          const result = await devicePoll(start.device_code);
-          if (result.status === "success") {
-            setPhase("idle");
-            setUserCode(null);
-            onDone();
-            return;
-          }
-          timerRef.current = window.setTimeout(() => void poll(), Math.max(1, start.interval) * 1000);
-        } catch (e) {
-          setPhase("error");
-          setMessage(e instanceof Error ? e.message : String(e));
-        }
-      };
-      timerRef.current = window.setTimeout(() => void poll(), Math.max(1, start.interval) * 1000);
-    } catch (e) {
-      setPhase("error");
-      setMessage(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  if (phase === "waiting") {
-    return (
-      <div className="gh-device">
-        <span className="muted">Enter code in browser:</span>
-        <code className="gh-code">{userCode}</code>
-        <span className="muted">Waiting for authorization…</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="gh-device">
-      <button className="pill-btn" type="button" onClick={() => void begin()}>
-        <Plus size={12} strokeWidth={2.3} /> Add account
-      </button>
-      {phase === "error" && message ? <span className="gh-card-line error">{message}</span> : null}
-    </div>
-  );
-};
+const AddAccountSteps = () => (
+  <div className="gh-add-steps">
+    <span className="muted">Add a GitHub account from the terminal:</span>
+    <ol>
+      <li>
+        Run
+        <code className="gh-inline-code">{ADD_ACCOUNT_COMMAND}</code>
+        <button
+          className="gh-copy"
+          type="button"
+          onClick={() => void navigator.clipboard?.writeText(ADD_ACCOUNT_COMMAND).catch(() => undefined)}
+          title="Copy command"
+        >
+          Copy
+        </button>
+      </li>
+      <li>Choose GitHub.com → HTTPS → Login with a web browser</li>
+      <li>Come back and press Refresh ↻ to see the new account</li>
+    </ol>
+  </div>
+);
 
 interface IGithubPanelProps {
   monitor: IGithubMonitor;
@@ -239,6 +195,8 @@ interface IGithubPanelProps {
 }
 
 export const GithubPanel = ({ monitor, canUseNativeControls }: IGithubPanelProps) => {
+  const [showAddSteps, setShowAddSteps] = useState(false);
+
   if (!canUseNativeControls) {
     return <div className="gh-empty">GitHub monitoring needs the desktop runtime and the GitHub CLI (gh).</div>;
   }
@@ -261,11 +219,14 @@ export const GithubPanel = ({ monitor, canUseNativeControls }: IGithubPanelProps
             </option>
           ))}
         </select>
-        <button className="gh-icon-btn" type="button" aria-label="Refresh" onClick={() => monitor.refresh()}>
+        <button className="gh-icon-btn" type="button" aria-label="Refresh" onClick={() => { monitor.refresh(); void monitor.refreshAccounts(); }}>
           <RefreshCw size={12} strokeWidth={2.3} />
         </button>
-        <AddAccount onDone={() => void monitor.refreshAccounts()} />
+        <button className="gh-icon-btn" type="button" data-active={showAddSteps || undefined} aria-label="Add account" aria-pressed={showAddSteps} title="Add account" onClick={() => setShowAddSteps((v) => !v)}>
+          <Plus size={12} strokeWidth={2.3} />
+        </button>
       </div>
+      {showAddSteps ? <AddAccountSteps /> : null}
       {monitor.activeAccount ? (
         <span className="gh-account-note muted">Switching affects the gh CLI system-wide.</span>
       ) : null}

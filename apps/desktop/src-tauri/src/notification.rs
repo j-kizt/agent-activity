@@ -1,27 +1,4 @@
 use serde::Serialize;
-use std::sync::{
-    atomic::{AtomicU64, Ordering},
-    Arc, Mutex,
-};
-use std::time::{SystemTime, UNIX_EPOCH};
-
-#[derive(Default)]
-struct NotificationOperationGate {
-    latest_revision: AtomicU64,
-    lock: Mutex<()>,
-}
-
-#[derive(Clone, Default)]
-pub struct PomodoroNotificationState {
-    gate: Arc<NotificationOperationGate>,
-}
-
-impl PomodoroNotificationState {
-    fn begin_operation(&self) -> (u64, Arc<NotificationOperationGate>) {
-        let revision = self.gate.latest_revision.fetch_add(1, Ordering::SeqCst) + 1;
-        (revision, Arc::clone(&self.gate))
-    }
-}
 
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,23 +13,16 @@ pub enum NotificationPermissionState {
 
 #[cfg(target_os = "macos")]
 mod platform {
-    use std::{
-        ptr::NonNull,
-        sync::mpsc,
-        time::{Duration, SystemTime, UNIX_EPOCH},
-    };
+    use std::{ptr::NonNull, sync::mpsc, time::Duration};
 
     use block2::{DynBlock, RcBlock};
     use objc2::{
         define_class, extern_methods, rc::Retained, runtime::NSObject, runtime::ProtocolObject,
     };
-    use objc2_foundation::{
-        NSArray, NSCalendar, NSCalendarUnit, NSDate, NSError, NSObjectProtocol, NSString,
-    };
+    use objc2_foundation::{NSError, NSObjectProtocol, NSString};
     use objc2_user_notifications::{
-        UNAuthorizationOptions, UNAuthorizationStatus, UNCalendarNotificationTrigger,
-        UNMutableNotificationContent, UNNotification, UNNotificationPresentationOptions,
-        UNNotificationRequest, UNNotificationSettings, UNUserNotificationCenter,
+        UNAuthorizationOptions, UNAuthorizationStatus, UNNotification,
+        UNNotificationPresentationOptions, UNNotificationSettings, UNUserNotificationCenter,
         UNUserNotificationCenterDelegate,
     };
 
@@ -60,6 +30,17 @@ mod platform {
 
     const CALLBACK_TIMEOUT: Duration = Duration::from_secs(10);
     const PERMISSION_CALLBACK_TIMEOUT: Duration = Duration::from_secs(5 * 60);
+
+    /// UserNotifications requires a real app bundle (a bundle identifier). Running the
+    /// unbundled `target/debug` binary via `tauri dev` has no main bundle, so any
+    /// `UNUserNotificationCenter` call throws an NSException. Treat that case as
+    /// "notifications unavailable" instead of crashing the whole app.
+    fn is_bundled() -> bool {
+        std::env::current_exe()
+            .ok()
+            .and_then(|path| path.to_str().map(|s| s.contains(".app/Contents/MacOS/")))
+            .unwrap_or(false)
+    }
 
     define_class!(
         #[unsafe(super(NSObject))]
@@ -93,6 +74,9 @@ mod platform {
     }
 
     pub fn initialize() {
+        if !is_bundled() {
+            return;
+        }
         NOTIFICATION_DELEGATE.with(|delegate| {
             let center = UNUserNotificationCenter::currentNotificationCenter();
             let delegate = ProtocolObject::from_ref(&**delegate);
@@ -101,11 +85,17 @@ mod platform {
     }
 
     pub fn permission_state() -> Result<NotificationPermissionState, String> {
+        if !is_bundled() {
+            return Ok(NotificationPermissionState::Unsupported);
+        }
         let settings = notification_settings()?;
         Ok(permission_state_from_status(settings.authorizationStatus()))
     }
 
     pub fn request_permission() -> Result<NotificationPermissionState, String> {
+        if !is_bundled() {
+            return Err("Notifications require the installed app bundle (unavailable in dev)".to_string());
+        }
         let center = UNUserNotificationCenter::currentNotificationCenter();
         let (sender, receiver) = mpsc::channel();
         let completion = RcBlock::new(move |_granted, error: *mut NSError| {
@@ -128,93 +118,6 @@ mod platform {
             })??;
 
         permission_state()
-    }
-
-    pub fn schedule(
-        request_id: String,
-        deadline_ms: u64,
-        title: String,
-        body: String,
-    ) -> Result<(), String> {
-        let request_id = validated_request_id(request_id)?;
-        let settings = notification_settings()?;
-        match permission_state_from_status(settings.authorizationStatus()) {
-            NotificationPermissionState::Authorized
-            | NotificationPermissionState::Provisional
-            | NotificationPermissionState::Ephemeral => {}
-            NotificationPermissionState::NotDetermined => {
-                return Err(
-                    "macOS notification permission has not been requested; request it from an explicit user action first"
-                        .to_string(),
-                )
-            }
-            NotificationPermissionState::Denied => {
-                return Err("macOS notification permission is denied".to_string())
-            }
-            NotificationPermissionState::Unsupported => {
-                return Err("Native notifications are unavailable on this platform".to_string())
-            }
-        }
-        let now_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|error| format!("System clock is before the Unix epoch: {error}"))?
-            .as_millis();
-        let deadline_ms = u128::from(deadline_ms);
-        if deadline_ms <= now_ms {
-            return Err("Pomodoro notification deadline must be in the future".to_string());
-        }
-        let deadline_seconds = deadline_ms as f64 / 1_000.0;
-
-        let content = UNMutableNotificationContent::new();
-        content.setTitle(&NSString::from_str(&title));
-        content.setBody(&NSString::from_str(&body));
-
-        let deadline = NSDate::dateWithTimeIntervalSince1970(deadline_seconds);
-        let calendar = NSCalendar::currentCalendar();
-        let components = calendar.components_fromDate(
-            NSCalendarUnit::Year
-                | NSCalendarUnit::Month
-                | NSCalendarUnit::Day
-                | NSCalendarUnit::Hour
-                | NSCalendarUnit::Minute
-                | NSCalendarUnit::Second,
-            &deadline,
-        );
-        let trigger = UNCalendarNotificationTrigger::triggerWithDateMatchingComponents_repeats(
-            &components,
-            false,
-        );
-        let identifier = NSString::from_str(&request_id);
-        let request = UNNotificationRequest::requestWithIdentifier_content_trigger(
-            &identifier,
-            &content,
-            Some(&trigger),
-        );
-
-        let center = UNUserNotificationCenter::currentNotificationCenter();
-        let (sender, receiver) = mpsc::channel();
-        let completion = RcBlock::new(move |error: *mut NSError| {
-            let result = if error.is_null() {
-                Ok(())
-            } else {
-                Err(ns_error_message(error))
-            };
-            let _ = sender.send(result);
-        });
-        center.addNotificationRequest_withCompletionHandler(&request, Some(&completion));
-
-        receiver
-            .recv_timeout(CALLBACK_TIMEOUT)
-            .map_err(|_| "Timed out while scheduling the macOS notification".to_string())?
-    }
-
-    pub fn cancel(request_id: String) -> Result<(), String> {
-        let request_id = validated_request_id(request_id)?;
-        let identifiers = NSArray::from_retained_slice(&[NSString::from_str(&request_id)]);
-        let center = UNUserNotificationCenter::currentNotificationCenter();
-        center.removePendingNotificationRequestsWithIdentifiers(&identifiers);
-        center.removeDeliveredNotificationsWithIdentifiers(&identifiers);
-        Ok(())
     }
 
     fn notification_settings() -> Result<Retained<UNNotificationSettings>, String> {
@@ -249,15 +152,6 @@ mod platform {
         }
     }
 
-    fn validated_request_id(request_id: String) -> Result<String, String> {
-        let request_id = request_id.trim();
-        if request_id.is_empty() {
-            Err("Notification request id must not be empty".to_string())
-        } else {
-            Ok(request_id.to_string())
-        }
-    }
-
     fn ns_error_message(error: *mut NSError) -> String {
         // SAFETY: Apple passes either null or a valid NSError for the duration of the callback.
         unsafe { &*error }.localizedDescription().to_string()
@@ -275,19 +169,6 @@ mod platform {
     }
 
     pub fn request_permission() -> Result<NotificationPermissionState, String> {
-        Err("Native macOS notifications are unavailable on this platform".to_string())
-    }
-
-    pub fn schedule(
-        _request_id: String,
-        _deadline_ms: u64,
-        _title: String,
-        _body: String,
-    ) -> Result<(), String> {
-        Err("Native macOS notifications are unavailable on this platform".to_string())
-    }
-
-    pub fn cancel(_request_id: String) -> Result<(), String> {
         Err("Native macOS notifications are unavailable on this platform".to_string())
     }
 }
@@ -316,76 +197,3 @@ pub async fn request_notification_permission() -> Result<NotificationPermissionS
     run_blocking(platform::request_permission).await
 }
 
-#[tauri::command]
-pub async fn schedule_pomodoro_notification(
-    state: tauri::State<'_, PomodoroNotificationState>,
-    request_id: String,
-    deadline_ms: u64,
-    title: String,
-    body: String,
-) -> Result<(), String> {
-    let (revision, gate) = state.begin_operation();
-    run_blocking(move || {
-        let _guard = gate
-            .lock
-            .lock()
-            .map_err(|_| "Pomodoro notification operation lock is poisoned".to_string())?;
-        if gate.latest_revision.load(Ordering::SeqCst) != revision {
-            return Ok(());
-        }
-        platform::schedule(request_id, deadline_ms, title, body)
-    })
-    .await
-}
-
-#[tauri::command]
-pub async fn cancel_pomodoro_notification(
-    state: tauri::State<'_, PomodoroNotificationState>,
-    request_id: String,
-    handoff_deadline_ms: Option<u64>,
-) -> Result<bool, String> {
-    let (revision, gate) = state.begin_operation();
-    run_blocking(move || {
-        let _guard = gate
-            .lock
-            .lock()
-            .map_err(|_| "Pomodoro notification operation lock is poisoned".to_string())?;
-        if gate.latest_revision.load(Ordering::SeqCst) != revision {
-            return Ok(false);
-        }
-        if let Some(deadline_ms) = handoff_deadline_ms {
-            let now_ms = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_err(|error| format!("System clock is before the Unix epoch: {error}"))?
-                .as_millis();
-            if now_ms >= u128::from(deadline_ms) {
-                return Ok(false);
-            }
-        }
-        platform::cancel(request_id)?;
-        Ok(true)
-    })
-    .await
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn newer_native_operation_invalidates_older_renderer_work() {
-        let state = PomodoroNotificationState::default();
-        let (older_revision, older_gate) = state.begin_operation();
-        let (newer_revision, newer_gate) = state.begin_operation();
-
-        assert_eq!(older_revision + 1, newer_revision);
-        assert_ne!(
-            older_gate.latest_revision.load(Ordering::SeqCst),
-            older_revision
-        );
-        assert_eq!(
-            newer_gate.latest_revision.load(Ordering::SeqCst),
-            newer_revision
-        );
-    }
-}

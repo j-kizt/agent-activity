@@ -43,10 +43,7 @@ use github::{
 
 use keep_awake::KeepAwakeState;
 use local_services::{control_local_service, local_services, LocalServicesControlState};
-use notification::{
-    cancel_pomodoro_notification, notification_permission_state, request_notification_permission,
-    schedule_pomodoro_notification, PomodoroNotificationState,
-};
+use notification::{notification_permission_state, request_notification_permission};
 use standalone_bridge::StandaloneBridgeState;
 
 #[cfg(target_os = "macos")]
@@ -4371,8 +4368,8 @@ fn focus_terminal(
         }
     }
 
-    let fallback = focus_ghostty_window(&conversation_id, cwd.as_deref())?;
-    if fallback.starts_with("Activated Ghostty ·") && herdr_error.is_some() {
+    let fallback = focus_iterm_window(&conversation_id, cwd.as_deref())?;
+    if fallback.starts_with("Activated iTerm ·") && herdr_error.is_some() {
         return Ok(format!("Herdr focus unavailable · {fallback}"));
     }
     Ok(fallback)
@@ -4409,7 +4406,7 @@ fn focus_herdr_pane(
         return Err("Herdr focus response had no result".to_string());
     }
 
-    activate_ghostty()?;
+    activate_iterm()?;
     Ok(format!("Focused Herdr · {pane_id}"))
 }
 
@@ -4641,31 +4638,31 @@ fn verify_herdr_agent_identity(
     Ok(())
 }
 
-fn activate_ghostty() -> Result<(), String> {
+fn activate_iterm() -> Result<(), String> {
     let output = Command::new("open")
-        .args(["-a", "Ghostty"])
+        .args(["-a", "iTerm"])
         .output()
-        .map_err(|error| format!("Failed to launch Ghostty: {error}"))?;
+        .map_err(|error| format!("Failed to launch iTerm: {error}"))?;
     if output.status.success() {
         return Ok(());
     }
     let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
     Err(if stderr.is_empty() {
-        "Failed to activate Ghostty".to_string()
+        "Failed to activate iTerm".to_string()
     } else {
-        format!("Failed to activate Ghostty: {stderr}")
+        format!("Failed to activate iTerm: {stderr}")
     })
 }
 
-fn focus_ghostty_window(conversation_id: &str, cwd: Option<&str>) -> Result<String, String> {
+fn focus_iterm_window(conversation_id: &str, cwd: Option<&str>) -> Result<String, String> {
     let hints = build_focus_hints(conversation_id, cwd);
 
-    if let Ok(message) = focus_ghostty_with_window_hints(&hints) {
+    if let Ok(message) = focus_iterm_with_window_hints(&hints) {
         return Ok(message);
     }
 
-    activate_ghostty()?;
-    Ok("Activated Ghostty · exact terminal not found".to_string())
+    activate_iterm()?;
+    Ok("Activated iTerm · exact terminal not found".to_string())
 }
 
 fn build_focus_hints(conversation_id: &str, cwd: Option<&str>) -> Vec<String> {
@@ -4689,8 +4686,8 @@ fn build_focus_hints(conversation_id: &str, cwd: Option<&str>) -> Vec<String> {
     hints
 }
 
-fn focus_ghostty_with_window_hints(hints: &[String]) -> Result<String, String> {
-    let script = build_focus_ghostty_script(hints);
+fn focus_iterm_with_window_hints(hints: &[String]) -> Result<String, String> {
+    let script = build_focus_iterm_script(hints);
     let output = Command::new("osascript")
         .arg("-e")
         .arg(script)
@@ -4709,15 +4706,15 @@ fn focus_ghostty_with_window_hints(hints: &[String]) -> Result<String, String> {
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if stdout.strip_prefix("matched:").is_some() {
         Ok(format!(
-            "Focused Ghostty · {}",
+            "Focused iTerm · {}",
             stdout.trim_start_matches("matched:")
         ))
     } else {
-        Ok("Activated Ghostty · exact terminal not found".to_string())
+        Ok("Activated iTerm · exact terminal not found".to_string())
     }
 }
 
-fn build_focus_ghostty_script(hints: &[String]) -> String {
+fn build_focus_iterm_script(hints: &[String]) -> String {
     let hints_source = hints
         .iter()
         .filter(|hint| !hint.trim().is_empty())
@@ -4732,25 +4729,29 @@ fn build_focus_ghostty_script(hints: &[String]) -> String {
 
     format!(
         r#"set matchHints to {hints_source}
-tell application "Ghostty"
+tell application "iTerm2"
   repeat with candidateWindow in windows
-    set windowTitle to name of candidateWindow as text
-    set windowId to id of candidateWindow as text
+    set windowTitle to (name of candidateWindow) as text
     repeat with candidateTab in tabs of candidateWindow
-      set tabTitle to name of candidateTab as text
-      set tabId to id of candidateTab as text
-      repeat with candidateTerminal in terminals of candidateTab
-        set terminalTitle to name of candidateTerminal as text
-        set terminalId to id of candidateTerminal as text
-        set terminalCwd to working directory of candidateTerminal as text
+      repeat with candidateSession in sessions of candidateTab
+        set sessionName to (name of candidateSession) as text
+        set sessionTty to ""
+        try
+          set sessionTty to (tty of candidateSession) as text
+        end try
+        set sessionPath to ""
+        try
+          set sessionPath to (get variable named "path" of candidateSession) as text
+        end try
         repeat with matchHint in matchHints
           set hintText to matchHint as text
           if hintText is not "" then
-            if terminalCwd is hintText or terminalCwd contains hintText or terminalTitle contains hintText or tabTitle contains hintText or windowTitle contains hintText or terminalId is hintText or tabId is hintText or windowId is hintText then
-              select tab candidateTab
-              focus candidateTerminal
-              activate window candidateWindow
-              return "matched:" & terminalCwd & " · " & terminalTitle
+            if sessionPath is hintText or sessionPath contains hintText or sessionName contains hintText or windowTitle contains hintText or sessionTty is hintText then
+              select candidateWindow
+              tell candidateTab to select
+              tell candidateSession to select
+              activate
+              return "matched:" & sessionName
             end if
           end if
         end repeat
@@ -5463,7 +5464,6 @@ pub fn run() {
         Box::new(tauri::generate_handler![
             agy_usage,
             bridge_health,
-            cancel_pomodoro_notification,
             claude_usage,
             codex_usage,
             cursor_usage,
@@ -5483,14 +5483,12 @@ pub fn run() {
             open_external_url,
             reconcile_display,
             request_notification_permission,
-            schedule_pomodoro_notification,
             set_keep_awake,
             select_display
         ]);
     let app = tauri::Builder::default()
         .manage(KeepAwakeState::default())
         .manage(DisplayPreferenceState::default())
-        .manage(PomodoroNotificationState::default())
         .manage(LocalServicesControlState::default())
         .manage(StandaloneBridgeState::default())
         .invoke_handler(move |invoke| command_handler(invoke))
@@ -5512,6 +5510,17 @@ pub fn run() {
                 Err(error) => {
                     eprintln!("Agent Activity standalone bridge resource is unavailable: {error}");
                 }
+            }
+
+            if let Some(window) = app.get_webview_window("main") {
+                let hide_target = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        // Menu-bar app: closing the window hides it instead of quitting.
+                        api.prevent_close();
+                        let _ = hide_target.hide();
+                    }
+                });
             }
 
             setup_tray(app)?;

@@ -39,7 +39,7 @@ export const formatRelativeAge = (timestamp: string): string => {
 
 export const shortModelName = (model: string): string =>
   (model.split("/").filter(Boolean).at(-1) ?? model).replace(/^chatgpt-plus-pro\//, "") ||
-  "Letta";
+  "Claude Code";
 
 const toolKind = (name: string): ActivityKind => {
   if (name === "UpdatePlan") return "planning";

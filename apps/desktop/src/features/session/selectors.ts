@@ -142,7 +142,7 @@ export const buildSessionSummaries = (
       workspacePath,
       detail: activity.detail,
       activityKind: activity.kind,
-      model: sessionEvents.find((event) => event.model)?.model ?? "Letta",
+      model: sessionEvents.find((event) => event.model)?.model ?? "Claude Code",
       status: getEventSessionStatus(latest, now),
       lastActivityAt: latest.timestamp,
       herdrTarget: getSessionHerdrTarget(sessionEvents),
@@ -165,7 +165,7 @@ export const buildSessionSummaries = (
       workspacePath,
       detail: "idle",
       activityKind: "session",
-      model: presence.model ?? "Letta",
+      model: presence.model ?? "Claude Code",
       status: "idle",
       lastActivityAt: presence.lastEventAt ?? new Date(0).toISOString(),
       herdrTarget: getSessionHerdrTarget(eventsForSession),
@@ -193,9 +193,9 @@ export const buildSessionDetail = (
 
   return {
     ...summary,
-    agentName: (current ? presence.agentName : latest?.agentName) ?? "Mahiro Code",
+    agentName: (current ? presence.agentName : latest?.agentName) ?? "Claude Code",
     cwd: workspacePath ?? (current ? presence.cwd : latest?.cwd) ?? "No workspace",
-    model: (current ? presence.model : latest?.model) ?? "Letta Code",
+    model: (current ? presence.model : latest?.model) ?? "Claude Code",
     permissionMode: (current ? presence.permissionMode : latest?.permissionMode) ?? "—",
     events: sessionEvents,
   };
