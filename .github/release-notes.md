@@ -1,11 +1,8 @@
 Agent Activity is a local macOS menu-bar popover that surfaces live Claude Code / Codex activity, provider usage, local services, and the state of the GitHub repos you track.
 
-### Fixes in this release
-- **GitHub tab now works when the app is opened from Finder/Applications** — the app imports your login-shell PATH at startup, so it can find `gh` and `node` (previously the account list was empty and the local bridge could fail to start).
+### What's new
+- **GitHub repos are tracked per gh account** — the tab now shows only the repos you track for the active account, and switching accounts swaps the list. Your existing tracked repos are migrated onto the active account automatically.
 
-### Included features
-- **Sessions** — live Claude Code activity (turn / tool / done / needs-input) with per-session history
-- **Usage** — quota & token views for Claude Code, Codex, Cursor, and Antigravity
-- **GitHub** — per-repo latest commit, CI status, and open PRs; switch gh accounts inline
-- **Terminal focus** — jump to the matching iTerm2 or Ghostty window at the session's cwd
-- **Auto-update** — signed updates delivered straight from GitHub Releases
+### Recent fixes
+- GitHub tab works when the app is opened from Finder/Applications (login-shell PATH is imported so `gh` and `node` resolve)
+- Release notes are shown in Settings → Update
