@@ -20,13 +20,20 @@ jobs:
       - name: Build changelog
         id: changelog
         run: |
-          prev="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
-          range="${prev:+$prev..}${GITHUB_REF_NAME}"
-          notes="$(git log "$range" --no-merges --pretty='- %s' | grep -vE '^- (chore: release|ci:|Merge )' || true)"
-          [ -z "$notes" ] && notes="- Maintenance release"
+          # Prefer hand-written notes from the annotated tag message body.
+          tag_body="$(git tag -l --format='%(contents:body)' "${GITHUB_REF_NAME}")"
+          if [ -n "$(printf '%s' "$tag_body" | tr -d '[:space:]')" ]; then
+            notes="$tag_body"
+          else
+            prev="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+            range="${prev:+$prev..}${GITHUB_REF_NAME}"
+            commits="$(git log "$range" --no-merges --pretty='- %s' | grep -vE '^- (chore: release|ci:|Merge )' || true)"
+            [ -z "$commits" ] && commits="- Maintenance release"
+            notes="## What's changed
+          $commits"
+          fi
           {
             echo "notes<<CHANGELOG_EOF"
-            echo "## What's changed"
             echo "$notes"
             echo "CHANGELOG_EOF"
           } >> "$GITHUB_OUTPUT"
