@@ -31,6 +31,7 @@ import {
 import type { DeletedSessionRegistry, DismissedSessionRegistry, ISessionDetail, ISessionSummary, IWorkspaceSessionGroup } from "./features/session/types";
 import { useAgentActivityPresence } from "./features/presence/useAgentActivityPresence";
 import { SetupPanel } from "./features/setup/SetupPanel";
+import { useUpdater } from "./features/updater/useUpdater";
 import type { IDisplayStateSnapshot } from "./features/setup/display";
 import { readUsageSettings, writeUsageSettings } from "./features/usage/adapters";
 import { AgentUsageList } from "./features/usage/components";
@@ -131,6 +132,7 @@ const App = () => {
       ? ({ ...view, status: "idle", label: "idle" } satisfies IStatusView)
       : view;
   const canUseNativeControls = typeof window.__TAURI_INTERNALS__ !== "undefined";
+  const updater = useUpdater();
   const isConnected = connection.status === "connected";
   const connectionTitle = DEMO_MODE ? "Demo mode" : (connection.message ?? connection.status);
   const workspace = shortenPath(presence.cwd);
@@ -386,6 +388,11 @@ const App = () => {
       window.clearInterval(timer);
     };
   }, [canUseNativeControls]);
+
+  useEffect(() => {
+    if (!canUseNativeControls) return;
+    void updater.check();
+  }, [canUseNativeControls, updater.check]);
 
   useEffect(() => {
     const enterKeyboardMode = (event: KeyboardEvent) => {
@@ -811,6 +818,7 @@ const App = () => {
                   onDisplayRefresh={loadDisplayState}
                   onInstallHook={() => void installHook()}
                   onKeepAwakeChange={updateKeepAwakeEnabled}
+                  updater={updater}
                 />
               ) : selectedSession ? (
                 <div className="detail-body session-context-view" data-status={selectedSession.status}>

@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Default Agent Activity desktop capability set",
   "windows": ["main", "pet"],
-  "permissions": []
+  "permissions": ["updater:default", "process:default", "process:allow-restart"]
 }

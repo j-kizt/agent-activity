@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { ArrowRight, Check, Coffee, Download, Focus, Monitor as MonitorIcon, PlugZap } from "lucide-react";
+import { ArrowRight, Check, Coffee, Download, Focus, Monitor as MonitorIcon, PlugZap, RefreshCw } from "lucide-react";
 import type { IAgentActivityBridgeCapabilities } from "@agent-activity/protocol";
 import { shortenPath } from "../session/activity";
 import { displayResolutionLabel, type IDisplayStateSnapshot } from "./display";
+import type { IUseUpdater } from "../updater/useUpdater";
 
 type SetupCategory = "connection" | "display";
 const SETUP_CATEGORIES: SetupCategory[] = ["connection", "display"];
@@ -26,9 +27,19 @@ export interface ISetupPanelProps {
   onDisplayChange: (displayId: string) => Promise<void>;
   onDisplayRefresh: () => Promise<void>;
   onKeepAwakeChange: (enabled: boolean) => void;
+  updater: IUseUpdater;
 }
 
-export const SetupPanel = ({ capabilities, canUseNativeControls, connectionTitle, displayError, displayLoading, displayState, guidance, isConnected, keepAwakeActive, keepAwakeEnabled, keepAwakeError, hookStatus, nativeAction, onCheckBridge, onDisplayChange, onDisplayRefresh, onInstallHook, onKeepAwakeChange }: ISetupPanelProps) => {
+const UPDATER_DETAIL: Record<IUseUpdater["status"], string> = {
+  idle: "Check for the latest release",
+  checking: "Checking for updates…",
+  available: "Update available",
+  downloading: "Downloading update…",
+  upToDate: "You're on the latest version",
+  error: "Update check failed",
+};
+
+export const SetupPanel = ({ capabilities, canUseNativeControls, connectionTitle, displayError, displayLoading, displayState, guidance, isConnected, keepAwakeActive, keepAwakeEnabled, keepAwakeError, hookStatus, nativeAction, onCheckBridge, onDisplayChange, onDisplayRefresh, onInstallHook, onKeepAwakeChange, updater }: ISetupPanelProps) => {
   const [activeCategory, setActiveCategory] = useState<SetupCategory>("connection");
   const [compactNavigation, setCompactNavigation] = useState(() => window.matchMedia("(max-width: 380px)").matches);
   const [displayPickerOpen, setDisplayPickerOpen] = useState(false);
@@ -119,6 +130,7 @@ export const SetupPanel = ({ capabilities, canUseNativeControls, connectionTitle
               <div className="setup-section-heading"><span>Connection</span><small>Bridge and agent integration</small></div>
               <div className="setup-row"><span className="bridge-dot" data-connected={isConnected} title={connectionTitle} /><span className="setup-copy"><span className="setup-title">Bridge</span><span className="setup-detail">{connectionTitle}</span></span><button className="pill-btn" type="button" onClick={onCheckBridge} data-tauri-drag-region="false"><Check size={12} strokeWidth={2.3} />Check</button></div>
               <div className="setup-row"><span className="status-slot"><Download className="setup-icon" size={14} strokeWidth={2.3} /></span><span className="setup-copy"><span className="setup-title">Claude Code hooks</span><span className="setup-detail">{hookStatus.installed === true ? `Installed · ${shortenPath(hookStatus.path)}` : hookStatus.installed === false ? `Not installed · ${shortenPath(hookStatus.path)}` : canUseNativeControls ? "Checking install state" : "Tauri runtime needed"}</span></span>{hookStatus.installed ? (<span className="setup-installed"><Check size={12} strokeWidth={2.6} />Installed</span>) : (<button className="pill-btn accent" type="button" onClick={onInstallHook} data-tauri-drag-region="false"><Download size={12} strokeWidth={2.3} />Install</button>)}</div>
+              <div className="setup-row"><span className="status-slot"><RefreshCw className="setup-icon" size={14} strokeWidth={2.3} /></span><span className="setup-copy"><span className="setup-title">App updates</span><span className="setup-detail">{!canUseNativeControls ? "Desktop runtime required" : updater.status === "error" ? (updater.message ?? UPDATER_DETAIL.error) : updater.status === "available" ? `${UPDATER_DETAIL.available}${updater.version ? ` · v${updater.version}` : ""}` : UPDATER_DETAIL[updater.status]}</span></span>{updater.status === "available" ? (<button className="pill-btn accent" type="button" disabled={!canUseNativeControls} onClick={() => void updater.installAndRelaunch()} data-tauri-drag-region="false"><Download size={12} strokeWidth={2.3} />Install &amp; Restart</button>) : (<button className="pill-btn" type="button" disabled={!canUseNativeControls || updater.status === "checking" || updater.status === "downloading"} onClick={() => void updater.check()} data-tauri-drag-region="false"><RefreshCw size={12} strokeWidth={2.3} />Check</button>)}</div>
               <div className="setup-row passive"><span className="status-slot"><ArrowRight className="setup-icon" size={14} strokeWidth={2.3} /></span><span className="setup-copy"><span className="setup-title">{guidance.title}</span><span className="setup-detail">{guidance.detail}</span></span></div>
               <div className="setup-row passive"><span className="status-slot"><Focus className="setup-icon" size={14} strokeWidth={2.3} /></span><span className="setup-copy"><span className="setup-title">Session controls</span><span className="setup-detail">{canUseNativeControls ? "iTerm cwd/title focus · end unavailable" : capabilities.sessionActions.focusTerminal || capabilities.sessionActions.endSession ? "Focus/end available from bridge" : "Focus/end unavailable in current bridge"}</span></span></div>
               {nativeAction.message ? <div className="notice-row" data-online={nativeAction.bridgeOnline === true} role="status" aria-live="polite">{nativeAction.message}</div> : null}

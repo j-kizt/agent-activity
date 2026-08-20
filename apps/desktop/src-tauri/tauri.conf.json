@@ -34,6 +34,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": [
       "app"
     ],
@@ -43,6 +44,14 @@
     "resources": {
       "../../../adapters/claude/agent-activity-claude-hook.mjs": "agent-activity-claude-hook.mjs",
       "../../../adapters/bridge/agent-activity-bridge.mjs": "agent-activity-bridge.mjs"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/j-kizt/agent-activity/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI2OUM4OTZFQjI0MEQxNEYKUldSUDBVQ3lib21jdG5uenY3QkErbmM4VG9UZllJNU1BVGlVQ2szNzdZUEZRNkkzNEtUR09ZQTMK"
     }
   }
 }

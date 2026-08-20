@@ -5487,6 +5487,8 @@ pub fn run() {
             select_display
         ]);
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(KeepAwakeState::default())
         .manage(DisplayPreferenceState::default())
         .manage(LocalServicesControlState::default())
