@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Default Agent Activity desktop capability set",
-  "windows": ["main", "pet"],
-  "permissions": ["updater:default", "process:default", "process:allow-restart"]
+  "windows": ["main"],
+  "permissions": ["core:default", "core:app:allow-version", "updater:default", "process:default", "process:allow-restart"]
 }
