@@ -5,6 +5,7 @@ import {
   readStatusCache,
   readTrackedRepos,
   switchAccount,
+  takeLegacyTrackedRepos,
   writeStatusCache,
   writeTrackedRepos,
 } from "./adapter";
@@ -31,7 +32,7 @@ export interface IGithubMonitor {
 }
 
 export const useGithubMonitor = ({ active, canUseNativeControls }: IUseGithubMonitorOptions): IGithubMonitor => {
-  const [trackedRepos, setTrackedRepos] = useState<string[]>(readTrackedRepos);
+  const [trackedRepos, setTrackedRepos] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<Record<string, GithubRepoState>>(() => {
     const cache = readStatusCache();
     const initial: Record<string, GithubRepoState> = {};
@@ -42,6 +43,10 @@ export const useGithubMonitor = ({ active, canUseNativeControls }: IUseGithubMon
   });
   const [accounts, setAccounts] = useState<IGhAccount[]>([]);
   const [switching, setSwitching] = useState(false);
+
+  const activeAccount = accounts.find((account) => account.active)?.login ?? null;
+  const activeAccountRef = useRef(activeAccount);
+  activeAccountRef.current = activeAccount;
   const trackedRef = useRef(trackedRepos);
   trackedRef.current = trackedRepos;
 
@@ -87,7 +92,7 @@ export const useGithubMonitor = ({ active, canUseNativeControls }: IUseGithubMon
     setTrackedRepos((current) => {
       if (current.includes(trimmed)) return current;
       const next = [...current, trimmed];
-      writeTrackedRepos(next);
+      writeTrackedRepos(activeAccountRef.current, next);
       return next;
     });
     void refreshRepo(trimmed);
@@ -96,7 +101,7 @@ export const useGithubMonitor = ({ active, canUseNativeControls }: IUseGithubMon
   const removeRepo = useCallback((repo: string) => {
     setTrackedRepos((current) => {
       const next = current.filter((r) => r !== repo);
-      writeTrackedRepos(next);
+      writeTrackedRepos(activeAccountRef.current, next);
       return next;
     });
     setStatuses((current) => {
@@ -113,21 +118,29 @@ export const useGithubMonitor = ({ active, canUseNativeControls }: IUseGithubMon
     try {
       await switchAccount(user);
       await refreshAccounts();
-      refresh();
     } finally {
       setSwitching(false);
     }
-  }, [refresh, refreshAccounts]);
+  }, [refreshAccounts]);
+
+  // Load the tracked-repo list for the active account (migrating any legacy list once).
+  useEffect(() => {
+    if (!canUseNativeControls) return;
+    if (!activeAccount) {
+      setTrackedRepos([]);
+      return;
+    }
+    const repos = takeLegacyTrackedRepos(activeAccount) ?? readTrackedRepos(activeAccount);
+    setTrackedRepos(repos);
+    for (const repo of repos) void refreshRepo(repo);
+  }, [activeAccount, canUseNativeControls, refreshRepo]);
 
   useEffect(() => {
     if (!active || !canUseNativeControls) return undefined;
     void refreshAccounts();
-    refresh();
     const timer = window.setInterval(refresh, POLL_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [active, canUseNativeControls, refresh, refreshAccounts]);
-
-  const activeAccount = accounts.find((account) => account.active)?.login ?? null;
 
   return {
     trackedRepos,

@@ -48,12 +48,49 @@ const writeJson = (key: string, value: unknown): void => {
   }
 };
 
-export const readTrackedRepos = (): string[] => {
-  const value = readJson<unknown>(TRACKED_REPOS_KEY, []);
-  return Array.isArray(value) ? value.filter((r): r is string => typeof r === "string" && isValidRepo(r)) : [];
+const LEGACY_TRACKED_KEY = "__legacy__";
+type TrackedMap = Record<string, string[]>;
+
+// Tracked repos are stored per gh account: { "<login>": ["owner/repo", ...] }.
+// A legacy flat array (older builds) is surfaced under LEGACY_TRACKED_KEY so it
+// can be migrated onto the active account once.
+const readTrackedMap = (): TrackedMap => {
+  const raw = readJson<unknown>(TRACKED_REPOS_KEY, {});
+  if (Array.isArray(raw)) {
+    return { [LEGACY_TRACKED_KEY]: raw.filter((r): r is string => typeof r === "string" && isValidRepo(r)) };
+  }
+  if (raw && typeof raw === "object") {
+    const map: TrackedMap = {};
+    for (const [account, repos] of Object.entries(raw as Record<string, unknown>)) {
+      if (Array.isArray(repos)) map[account] = repos.filter((r): r is string => typeof r === "string" && isValidRepo(r));
+    }
+    return map;
+  }
+  return {};
 };
 
-export const writeTrackedRepos = (repos: string[]): void => writeJson(TRACKED_REPOS_KEY, repos);
+export const readTrackedRepos = (account: string | null): string[] => {
+  if (!account) return [];
+  return readTrackedMap()[account] ?? [];
+};
+
+export const writeTrackedRepos = (account: string | null, repos: string[]): void => {
+  if (!account) return;
+  const map = readTrackedMap();
+  delete map[LEGACY_TRACKED_KEY];
+  map[account] = repos;
+  writeJson(TRACKED_REPOS_KEY, map);
+};
+
+/** One-time adoption of a legacy flat list onto an account that has none yet. */
+export const takeLegacyTrackedRepos = (account: string | null): string[] | null => {
+  if (!account) return null;
+  const map = readTrackedMap();
+  const legacy = map[LEGACY_TRACKED_KEY];
+  if (!legacy || legacy.length === 0 || (map[account]?.length ?? 0) > 0) return null;
+  writeTrackedRepos(account, legacy);
+  return legacy;
+};
 
 export const readStatusCache = (): Record<string, IGithubRepoStatus> =>
   readJson<Record<string, IGithubRepoStatus>>(STATUS_CACHE_KEY, {});
