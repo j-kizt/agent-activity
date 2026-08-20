@@ -49,7 +49,7 @@ use standalone_bridge::StandaloneBridgeState;
 #[cfg(target_os = "macos")]
 use objc2::{msg_send, rc::Retained, MainThreadMarker};
 #[cfg(target_os = "macos")]
-use objc2_app_kit::{NSScreen, NSStatusWindowLevel, NSWindow, NSWindowCollectionBehavior};
+use objc2_app_kit::{NSScreen, NSWindow};
 #[cfg(target_os = "macos")]
 use objc2_foundation::{NSArray, NSPoint, NSRect, NSSize, NSString};
 #[cfg(target_os = "macos")]
@@ -5487,14 +5487,6 @@ fn position_main_window_with_appkit(
         let x = screen_frame.origin.x + (screen_frame.size.width / 2.0) - (width / 2.0);
         let y = screen_frame.origin.y + screen_frame.size.height - height;
 
-        ns_window.setLevel(NSStatusWindowLevel);
-        ns_window.setCollectionBehavior(
-            ns_window.collectionBehavior()
-                | NSWindowCollectionBehavior::CanJoinAllSpaces
-                | NSWindowCollectionBehavior::FullScreenAuxiliary
-                | NSWindowCollectionBehavior::Stationary,
-        );
-
         if target_size.is_some() {
             ns_window.setFrame_display(
                 NSRect::new(NSPoint::new(x, y), NSSize::new(width, height)),
@@ -5522,15 +5514,59 @@ fn hide_main_window(app: &tauri::AppHandle) {
     }
 }
 
-fn toggle_main_window(app: &tauri::AppHandle) {
+/// Show the window as a menu-bar popover centered under the click, clamped to the
+/// display the click happened on (menu bar exists on every display).
+fn show_popover(app: &tauri::AppHandle, anchor: tauri::PhysicalPosition<f64>) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let (win_w, win_h) = window
+        .outer_size()
+        .map(|s| (f64::from(s.width), f64::from(s.height)))
+        .unwrap_or((420.0, 560.0));
+
+    // Pick the monitor that contains the click point.
+    let monitor = window
+        .available_monitors()
+        .unwrap_or_default()
+        .into_iter()
+        .find(|m| {
+            let p = m.position();
+            let s = m.size();
+            anchor.x >= f64::from(p.x)
+                && anchor.x < f64::from(p.x) + f64::from(s.width)
+                && anchor.y >= f64::from(p.y)
+                && anchor.y < f64::from(p.y) + f64::from(s.height)
+        })
+        .or_else(|| window.primary_monitor().ok().flatten());
+
+    let mut x = anchor.x - win_w / 2.0;
+    let mut y = anchor.y + 6.0;
+    if let Some(m) = monitor {
+        let p = m.position();
+        let s = m.size();
+        let (mx, my, mw) = (f64::from(p.x), f64::from(p.y), f64::from(s.width));
+        let max_x = (mx + mw - win_w - 4.0).max(mx + 4.0);
+        x = x.clamp(mx + 4.0, max_x);
+        y = y.max(my + 4.0);
+        // Guard against a popover taller than the display pushing off the bottom.
+        let max_y = (my + f64::from(s.height) - win_h - 4.0).max(my + 4.0);
+        y = y.min(max_y);
+    }
+
+    let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+    let _ = window.show();
+    let _ = window.set_focus();
+}
+
+fn toggle_popover(app: &tauri::AppHandle, anchor: tauri::PhysicalPosition<f64>) {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
             let _ = window.hide();
-        } else {
-            let _ = window.show();
-            let _ = window.set_focus();
+            return;
         }
     }
+    show_popover(app, anchor);
 }
 
 fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
@@ -5549,10 +5585,11 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
+                position,
                 ..
             } = event
             {
-                toggle_main_window(tray.app_handle());
+                toggle_popover(tray.app_handle(), position);
             }
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
@@ -5623,12 +5660,17 @@ pub fn run() {
 
             if let Some(window) = app.get_webview_window("main") {
                 let hide_target = window.clone();
-                window.on_window_event(move |event| {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        // Menu-bar app: closing the window hides it instead of quitting.
+                window.on_window_event(move |event| match event {
+                    tauri::WindowEvent::CloseRequested { api, .. } => {
+                        // Menu-bar popover: closing hides instead of quitting.
                         api.prevent_close();
                         let _ = hide_target.hide();
                     }
+                    // Popover dismisses when it loses focus (click elsewhere).
+                    tauri::WindowEvent::Focused(false) => {
+                        let _ = hide_target.hide();
+                    }
+                    _ => {}
                 });
             }
 

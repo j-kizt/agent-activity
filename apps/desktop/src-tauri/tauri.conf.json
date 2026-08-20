@@ -16,14 +16,14 @@
         "title": "Agent Activity",
         "width": 420,
         "height": 560,
-        "resizable": true,
+        "resizable": false,
         "fullscreen": false,
-        "decorations": true,
+        "decorations": false,
         "transparent": false,
-        "alwaysOnTop": false,
+        "alwaysOnTop": true,
         "skipTaskbar": true,
         "shadow": true,
-        "center": true,
+        "center": false,
         "visible": false
       }
     ],

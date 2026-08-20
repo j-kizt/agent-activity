@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { ArrowRight, Check, Coffee, Download, Focus, Monitor as MonitorIcon, PlugZap, Puzzle, RefreshCw } from "lucide-react";
 import type { IAgentActivityBridgeCapabilities } from "@agent-activity/protocol";
 import { shortenPath } from "../session/activity";
-import { displayResolutionLabel, type IDisplayStateSnapshot } from "./display";
 import type { IUseUpdater } from "../updater/useUpdater";
 
 type SetupCategory = "connection" | "plugins" | "display" | "update";
@@ -17,15 +16,10 @@ export interface ISetupPanelProps {
   keepAwakeActive: boolean;
   keepAwakeEnabled: boolean;
   keepAwakeError: string | null;
-  displayError: string | null;
-  displayLoading: boolean;
-  displayState: IDisplayStateSnapshot | null;
   hookStatus: { path: string | null; installed: boolean | null };
   nativeAction: { bridgeOnline: boolean | null; message: string | null };
   onCheckBridge: () => void;
   onInstallHook: () => void;
-  onDisplayChange: (displayId: string) => Promise<void>;
-  onDisplayRefresh: () => Promise<void>;
   onKeepAwakeChange: (enabled: boolean) => void;
   terminal: "iterm" | "ghostty";
   onTerminalChange: (choice: "iterm" | "ghostty") => void;
@@ -41,48 +35,11 @@ const UPDATER_DETAIL: Record<IUseUpdater["status"], string> = {
   error: "Update check failed",
 };
 
-export const SetupPanel = ({ capabilities, canUseNativeControls, connectionTitle, displayError, displayLoading, displayState, guidance, isConnected, keepAwakeActive, keepAwakeEnabled, keepAwakeError, hookStatus, nativeAction, onCheckBridge, onDisplayChange, onDisplayRefresh, onInstallHook, onKeepAwakeChange, terminal, onTerminalChange, updater }: ISetupPanelProps) => {
+export const SetupPanel = ({ capabilities, canUseNativeControls, connectionTitle, guidance, isConnected, keepAwakeActive, keepAwakeEnabled, keepAwakeError, hookStatus, nativeAction, onCheckBridge, onInstallHook, onKeepAwakeChange, terminal, onTerminalChange, updater }: ISetupPanelProps) => {
   const [activeCategory, setActiveCategory] = useState<SetupCategory>("connection");
   const [compactNavigation, setCompactNavigation] = useState(() => window.matchMedia("(max-width: 380px)").matches);
-  const [displayPickerOpen, setDisplayPickerOpen] = useState(false);
-  const displayPickerTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const displayInteractionBusyRef = useRef(false);
-  const displays = displayState?.displays ?? [];
-  const activeDisplay = displays.find((display) => display.id === displayState?.activeDisplayId) ?? null;
-  const displayRadioSelection = displayState?.selectedDisplayId ?? null;
-  const displayFocusTarget = displayRadioSelection ?? displayState?.activeDisplayId ?? null;
-
-  const closeDisplayPicker = (): void => {
-    setDisplayPickerOpen(false);
-    window.requestAnimationFrame(() => displayPickerTriggerRef.current?.focus());
-  };
-
-  const handleDisplayKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, currentIndex: number): void => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      closeDisplayPicker();
-      return;
-    }
-    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key) || displays.length === 0 || displayInteractionBusyRef.current || displayLoading) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const nextIndex = event.key === "Home"
-      ? 0
-      : event.key === "End"
-        ? displays.length - 1
-        : (currentIndex + (["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : -1) + displays.length) % displays.length;
-    const nextDisplay = displays[nextIndex];
-    if (!nextDisplay) return;
-    displayInteractionBusyRef.current = true;
-    void onDisplayChange(nextDisplay.id).finally(() => {
-      displayInteractionBusyRef.current = false;
-    });
-    window.requestAnimationFrame(() => document.getElementById(`display-option-${nextIndex}`)?.focus());
-  };
 
   const selectCategory = (category: SetupCategory): void => {
-    setDisplayPickerOpen(false);
     setActiveCategory(category);
   };
 
@@ -96,21 +53,6 @@ export const SetupPanel = ({ capabilities, canUseNativeControls, connectionTitle
     window.requestAnimationFrame(() => document.getElementById(`setup-tab-${next}`)?.focus());
   };
 
-  const handleSetupKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
-    if (event.key !== "Escape") return;
-    if (displayPickerOpen) {
-      event.preventDefault();
-      event.stopPropagation();
-      closeDisplayPicker();
-    }
-  };
-
-  useEffect(() => {
-    if (!displayPickerOpen || displayLoading) return;
-    const selectedIndex = Math.max(0, displays.findIndex((display) => display.id === displayFocusTarget));
-    window.requestAnimationFrame(() => document.getElementById(`display-option-${selectedIndex}`)?.focus());
-  }, [displayPickerOpen, displayFocusTarget, displayLoading, displays.length]);
-
   useEffect(() => {
     const query = window.matchMedia("(max-width: 380px)");
     const update = () => setCompactNavigation(query.matches);
@@ -119,7 +61,7 @@ export const SetupPanel = ({ capabilities, canUseNativeControls, connectionTitle
   }, []);
 
   return (
-    <div className="setup-body" onKeyDown={handleSetupKeyDown}>
+    <div className="setup-body">
       <div className="setup-layout">
         <div className="setup-sidebar" role="tablist" aria-label="Setup sections" aria-orientation={compactNavigation ? "horizontal" : "vertical"}>
           <button className="setup-side-tab" id="setup-tab-connection" type="button" role="tab" aria-selected={activeCategory === "connection"} aria-controls="setup-panel-connection" tabIndex={activeCategory === "connection" ? 0 : -1} data-active={activeCategory === "connection"} onClick={() => selectCategory("connection")} onKeyDown={(event) => handleCategoryKeyDown(event, "connection")}><PlugZap size={12} strokeWidth={2.2} /><span>Connection</span></button>
@@ -148,11 +90,7 @@ export const SetupPanel = ({ capabilities, canUseNativeControls, connectionTitle
 
           {activeCategory === "display" ? (
             <>
-              <div className="setup-section-heading"><span>Display</span><small>Screen placement and power behavior</small></div>
-              <div className="setup-row display-setting-row"><span className="status-slot"><MonitorIcon className="setup-icon" size={14} strokeWidth={2.2} /></span><span className="setup-copy"><span className="setup-title">Target display</span><span className="setup-detail">{!canUseNativeControls ? "Desktop runtime required" : displayLoading ? "Reading connected displays" : displayError ? displayError : displayState?.fallbackActive ? `${displayState.preferredDisplayName || "Saved display"} unavailable · using ${activeDisplay?.name ?? "Primary"}` : activeDisplay ? `${activeDisplay.name} · ${displayResolutionLabel(activeDisplay)}${activeDisplay.isPrimary ? " · Primary" : ""}` : "No connected display found"}</span></span><button ref={displayPickerTriggerRef} className="pill-btn" type="button" disabled={!canUseNativeControls || displays.length === 0} aria-busy={displayLoading} onClick={() => { if (displayPickerOpen) closeDisplayPicker(); else { setDisplayPickerOpen(true); void onDisplayRefresh(); } }} data-tauri-drag-region="false" aria-controls="display-picker" aria-expanded={displayPickerOpen}><MonitorIcon size={12} strokeWidth={2.2} />{displayPickerOpen ? "Close" : "Choose"}</button></div>
-              {displayPickerOpen ? (
-                <div className="display-picker" id="display-picker" role="radiogroup" aria-label="Display" aria-busy={displayLoading}>{displays.map((display, index) => <button className="display-option" data-selected={display.id === displayRadioSelection} disabled={displayLoading} id={`display-option-${index}`} type="button" role="radio" aria-checked={display.id === displayRadioSelection} tabIndex={display.id === displayFocusTarget ? 0 : -1} onClick={() => { if (displayInteractionBusyRef.current) return; displayInteractionBusyRef.current = true; void onDisplayChange(display.id).finally(() => { displayInteractionBusyRef.current = false; }); closeDisplayPicker(); }} onKeyDown={(event) => handleDisplayKeyDown(event, index)} data-tauri-drag-region="false" key={display.id}><MonitorIcon size={16} strokeWidth={2.1} aria-hidden="true" /><span className="display-option-copy"><span>{display.name}</span><small>{displayResolutionLabel(display)}{display.isPrimary ? " · Primary" : ""}</small></span><span className="display-option-mark" aria-hidden="true">{display.id === displayRadioSelection ? "✓" : ""}</span></button>)}</div>
-              ) : null}
+              <div className="setup-section-heading"><span>Display</span><small>Screen power behavior</small></div>
               <div className="setup-row"><span className="status-slot"><Coffee className="setup-icon" size={14} strokeWidth={2.3} /></span><span className="setup-copy"><span className="setup-title">Keep display awake</span><span className="setup-detail">{!keepAwakeEnabled ? "Off · display follows macOS idle settings" : !canUseNativeControls ? "Desktop runtime required" : keepAwakeError ? `Unavailable · ${keepAwakeError}` : keepAwakeActive ? "Active · agent is working" : "On · waiting for active work"}</span></span><button className={`pill-btn ${keepAwakeEnabled ? "accent" : ""}`} type="button" onClick={() => onKeepAwakeChange(!keepAwakeEnabled)} data-tauri-drag-region="false" aria-label={`${keepAwakeEnabled ? "Disable" : "Enable"} keep display awake`}>{keepAwakeEnabled ? "On" : "Off"}</button></div>
             </>
           ) : null}

@@ -32,7 +32,6 @@ import type { DeletedSessionRegistry, DismissedSessionRegistry, ISessionDetail, 
 import { useAgentActivityPresence } from "./features/presence/useAgentActivityPresence";
 import { SetupPanel } from "./features/setup/SetupPanel";
 import { useUpdater } from "./features/updater/useUpdater";
-import type { IDisplayStateSnapshot } from "./features/setup/display";
 import { readUsageSettings, writeUsageSettings } from "./features/usage/adapters";
 import { AgentUsageList } from "./features/usage/components";
 import type { IUsageSettings } from "./features/usage/types";
@@ -50,7 +49,6 @@ const LocalServicesPanel = lazy(async () => {
   const module = await import("./features/runtime/components");
   return { default: module.LocalServicesPanel };
 });
-const DISPLAY_RECONCILE_INTERVAL_MS = 3_000;
 const KEEP_AWAKE_RETRY_DELAYS_MS = [750, 2_500] as const;
 interface INativeActionState {
   bridgeOnline: boolean | null;
@@ -106,9 +104,6 @@ const getGroupRemovalId = (groupKey: string, group: IWorkspaceSessionGroup) => [
 const App = () => {
   const { capabilities, connection, lastLiveEvent, now, presence, recentEvents, refreshCapabilities, sessionEventRegistry, setSessionEventRegistry, view } = useAgentActivityPresence({ demoMode: DEMO_MODE, demoScenario: DEMO_SCENARIO });
   const [usageSettings, setUsageSettings] = useState<IUsageSettings>(readUsageSettings);
-  const [displayState, setDisplayState] = useState<IDisplayStateSnapshot | null>(null);
-  const [displayLoading, setDisplayLoading] = useState(false);
-  const [displayError, setDisplayError] = useState<string | null>(null);
   const { refresh: refreshAgentUsage, usages: agentUsages } = useAgentUsageList(usageSettings, DEMO_MODE);
   const [acknowledgedConversationId, setAcknowledgedConversationId] = useState<string | null>(null);
   const [nativeAction, setNativeAction] = useState<INativeActionState>({ bridgeOnline: null, message: null });
@@ -134,8 +129,6 @@ const App = () => {
   const shouldFocusPanelRef = useRef(false);
   const keyboardNavigationRef = useRef(false);
   const keepAwakeRequestRef = useRef<Promise<unknown>>(Promise.resolve());
-  const displayRequestBusyRef = useRef(false);
-  const displayStateRef = useRef<IDisplayStateSnapshot | null>(null);
   const displayView =
     isDeletedAfter(deletedSessionIds, presence.conversationId, presence.lastEventAt) ||
     (view.status === "closed" && (acknowledgedConversationId === presence.conversationId || isDismissedAfter(dismissedSessionIds, presence.conversationId, presence.lastEventAt)))
@@ -369,35 +362,6 @@ const App = () => {
       detail: canUseNativeControls ? "Reading local hook and bridge state" : "Waiting for runtime",
     };
   })();
-
-  const applyDisplayState = (next: IDisplayStateSnapshot | null): void => {
-    displayStateRef.current = next;
-    setDisplayState(next);
-  };
-
-  useEffect(() => {
-    if (!canUseNativeControls) return undefined;
-    let cancelled = false;
-    const reconcile = async () => {
-      if (displayRequestBusyRef.current) return;
-      displayRequestBusyRef.current = true;
-      try {
-        const next = await invoke<IDisplayStateSnapshot>("reconcile_display");
-        if (cancelled) return;
-        applyDisplayState(next);
-      } catch {
-        // Keep the last usable display state; Setup refresh exposes persistent failures.
-      } finally {
-        displayRequestBusyRef.current = false;
-      }
-    };
-    void reconcile();
-    const timer = window.setInterval(() => void reconcile(), DISPLAY_RECONCILE_INTERVAL_MS);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [canUseNativeControls]);
 
   useEffect(() => {
     if (!canUseNativeControls) return;
@@ -635,45 +599,6 @@ const App = () => {
     }
   };
 
-  const loadDisplayState = async () => {
-    if (!canUseNativeControls) {
-      applyDisplayState(null);
-      setDisplayError(null);
-      return;
-    }
-    if (displayRequestBusyRef.current) return;
-
-    displayRequestBusyRef.current = true;
-    setDisplayLoading(true);
-    try {
-      const next = await invoke<IDisplayStateSnapshot>("display_state");
-      applyDisplayState(next);
-      setDisplayError(null);
-    } catch (error) {
-      setDisplayError(error instanceof Error ? error.message : "Could not read connected displays");
-    } finally {
-      displayRequestBusyRef.current = false;
-      setDisplayLoading(false);
-    }
-  };
-
-  const updateDisplay = async (displayId: string) => {
-    if (!canUseNativeControls) return;
-    if (displayRequestBusyRef.current) return;
-    displayRequestBusyRef.current = true;
-    setDisplayLoading(true);
-    try {
-      const next = await invoke<IDisplayStateSnapshot>("select_display", { displayId });
-      applyDisplayState(next);
-      setDisplayError(null);
-    } catch (error) {
-      setDisplayError(error instanceof Error ? error.message : "Could not move Agent Activity to that display");
-    } finally {
-      displayRequestBusyRef.current = false;
-      setDisplayLoading(false);
-    }
-  };
-
   const acknowledgeDone = () => {
     const conversationId = activitySession?.status === "done" ? activitySession.conversationId : presence.conversationId;
     setAcknowledgedConversationId(conversationId);
@@ -739,7 +664,6 @@ const App = () => {
   useEffect(() => {
     if (setupOpen) {
       void loadHookStatus();
-      void loadDisplayState();
       void checkBridge();
     }
   }, [setupOpen]);
@@ -814,9 +738,6 @@ const App = () => {
                   capabilities={capabilities}
                   canUseNativeControls={canUseNativeControls}
                   connectionTitle={connectionTitle}
-                  displayError={displayError}
-                  displayLoading={displayLoading}
-                  displayState={displayState}
                   guidance={setupGuidance}
                   isConnected={isConnected}
                   keepAwakeActive={keepAwakeActive}
@@ -825,8 +746,6 @@ const App = () => {
                   hookStatus={hookStatus}
                   nativeAction={nativeAction}
                   onCheckBridge={() => void checkBridge()}
-                  onDisplayChange={updateDisplay}
-                  onDisplayRefresh={loadDisplayState}
                   onInstallHook={() => void installHook()}
                   onKeepAwakeChange={updateKeepAwakeEnabled}
                   terminal={terminal}
