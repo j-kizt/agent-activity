@@ -5603,7 +5603,31 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
     Ok(())
 }
 
+/// GUI apps launched from Finder inherit a minimal PATH, so Homebrew (`gh`) and
+/// nvm (`node`) binaries are not found. Import the login+interactive shell PATH
+/// once at startup so every `Command::new(...)` and the bundled bridge resolve.
+#[cfg(target_os = "macos")]
+fn import_shell_path() {
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
+    let Ok(output) = Command::new(shell)
+        .args(["-ilc", "printf '__AAPATH__%s__AAEND__' \"$PATH\""])
+        .output()
+    else {
+        return;
+    };
+    let out = String::from_utf8_lossy(&output.stdout);
+    if let (Some(start), Some(end)) = (out.find("__AAPATH__"), out.find("__AAEND__")) {
+        let path = &out[start + "__AAPATH__".len()..end];
+        if !path.is_empty() {
+            std::env::set_var("PATH", path);
+        }
+    }
+}
+
 pub fn run() {
+    #[cfg(target_os = "macos")]
+    import_shell_path();
+
     let command_handler: Box<tauri::ipc::InvokeHandler<tauri::Wry>> =
         Box::new(tauri::generate_handler![
             agy_usage,
