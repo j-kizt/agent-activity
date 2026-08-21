@@ -1,5 +1,4 @@
 Agent Activity is a local macOS menu-bar companion that surfaces live Claude Code / Codex activity, provider usage, local services, and the state of the GitHub repos you track.
 
-### Changed
-- **The panel is a real window again instead of a menu-bar popover.** Click the tray icon to toggle it. It has the standard macOS title bar (close / minimize / zoom), is draggable and resizable, keeps its position, and no longer vanishes when it loses focus. Closing hides it (the app stays in the menu bar).
-- The window can now appear over full-screen apps.
+### Fixes
+- **Clicking the app icon now opens the window.** Previously the window could only be opened from the menu-bar (tray) icon; clicking the app icon in the Dock, Launchpad, or Finder while the app was already running did nothing. It now surfaces the window.

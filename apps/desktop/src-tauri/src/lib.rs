@@ -5803,6 +5803,11 @@ pub fn run() {
         } if label == "main" => {
             let _ = app_handle.state::<KeepAwakeState>().set_active(false);
         }
+        // Clicking the app icon (Launchpad/Dock/Finder) while the menu-bar app is
+        // already running fires Reopen; surface the window instead of doing nothing.
+        tauri::RunEvent::Reopen { .. } => {
+            show_main_window(app_handle);
+        }
         _ => {}
     });
 }
