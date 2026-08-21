@@ -5614,7 +5614,6 @@ fn position_main_window_with_appkit(
 
 fn show_main_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
-        let _ = position_main_window(&window);
         let _ = window.show();
         let _ = window.set_focus();
     }
@@ -5626,59 +5625,36 @@ fn hide_main_window(app: &tauri::AppHandle) {
     }
 }
 
-/// Show the window as a menu-bar popover centered under the click, clamped to the
-/// display the click happened on (menu bar exists on every display).
-fn show_popover(app: &tauri::AppHandle, anchor: tauri::PhysicalPosition<f64>) {
-    let Some(window) = app.get_webview_window("main") else {
-        return;
-    };
-    let (win_w, win_h) = window
-        .outer_size()
-        .map(|s| (f64::from(s.width), f64::from(s.height)))
-        .unwrap_or((420.0, 560.0));
-
-    // Pick the monitor that contains the click point.
-    let monitor = window
-        .available_monitors()
-        .unwrap_or_default()
-        .into_iter()
-        .find(|m| {
-            let p = m.position();
-            let s = m.size();
-            anchor.x >= f64::from(p.x)
-                && anchor.x < f64::from(p.x) + f64::from(s.width)
-                && anchor.y >= f64::from(p.y)
-                && anchor.y < f64::from(p.y) + f64::from(s.height)
-        })
-        .or_else(|| window.primary_monitor().ok().flatten());
-
-    let mut x = anchor.x - win_w / 2.0;
-    let mut y = anchor.y + 6.0;
-    if let Some(m) = monitor {
-        let p = m.position();
-        let s = m.size();
-        let (mx, my, mw) = (f64::from(p.x), f64::from(p.y), f64::from(s.width));
-        let max_x = (mx + mw - win_w - 4.0).max(mx + 4.0);
-        x = x.clamp(mx + 4.0, max_x);
-        y = y.max(my + 4.0);
-        // Guard against a popover taller than the display pushing off the bottom.
-        let max_y = (my + f64::from(s.height) - win_h - 4.0).max(my + 4.0);
-        y = y.min(max_y);
-    }
-
-    let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
-    let _ = window.show();
-    let _ = window.set_focus();
-}
-
-fn toggle_popover(app: &tauri::AppHandle, anchor: tauri::PhysicalPosition<f64>) {
+/// Toggle the menu-bar utility window: hide it if visible, otherwise show + focus.
+/// The window is user-movable and keeps its position, so we never reposition it.
+fn toggle_main_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
             let _ = window.hide();
-            return;
+        } else {
+            let _ = window.show();
+            let _ = window.set_focus();
         }
     }
-    show_popover(app, anchor);
+}
+
+/// Let the borderless window float onto the active Space — including over another
+/// app's full-screen Space — so the tray toggle always surfaces it. Without
+/// `FullScreenAuxiliary` a borderless window stays hidden behind full-screen apps.
+#[cfg(target_os = "macos")]
+fn configure_overlay_window(window: &tauri::WebviewWindow) {
+    use objc2_app_kit::NSWindowCollectionBehavior;
+    let Ok(ptr) = window.ns_window() else {
+        return;
+    };
+    // SAFETY: Tauri owns this NSWindow; this runs on AppKit's main thread during setup.
+    unsafe {
+        let ns_window: &NSWindow = &*ptr.cast();
+        ns_window.setCollectionBehavior(
+            NSWindowCollectionBehavior::CanJoinAllSpaces
+                | NSWindowCollectionBehavior::FullScreenAuxiliary,
+        );
+    }
 }
 
 fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
@@ -5697,11 +5673,10 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
-                position,
                 ..
             } = event
             {
-                toggle_popover(tray.app_handle(), position);
+                toggle_main_window(tray.app_handle());
             }
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
@@ -5797,18 +5772,16 @@ pub fn run() {
             }
 
             if let Some(window) = app.get_webview_window("main") {
+                #[cfg(target_os = "macos")]
+                configure_overlay_window(&window);
                 let hide_target = window.clone();
-                window.on_window_event(move |event| match event {
-                    tauri::WindowEvent::CloseRequested { api, .. } => {
-                        // Menu-bar popover: closing hides instead of quitting.
+                window.on_window_event(move |event| {
+                    // Menu-bar utility window: closing hides instead of quitting. It stays
+                    // open on focus loss so it can sit alongside other windows.
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                         api.prevent_close();
                         let _ = hide_target.hide();
                     }
-                    // Popover dismisses when it loses focus (click elsewhere).
-                    tauri::WindowEvent::Focused(false) => {
-                        let _ = hide_target.hide();
-                    }
-                    _ => {}
                 });
             }
 
